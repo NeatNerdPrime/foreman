@@ -126,7 +126,7 @@ class Host::Managed < Host::Base
     property :provision_method, String, desc: 'Returns a provisioning method used for this host, one of "build", "image". Plugins can add additional methods.'
     property :ptable, 'Ptable', desc: 'Returns a partition table object assigned to the host, returns nil if none is found'
     property :puppet_ca_server, String, desc: 'FQDN of the Puppet CA server used by this host, typically FQDN of the host\'s puppet CA proxy'
-    property :puppetmaster, String, desc: 'FQDN of the Puppet master/server used by this host, typically FQDN of the host\'s puppet proxy'
+    property :puppet_server, String, desc: 'FQDN of the Puppet master/server used by this host, typically FQDN of the host\'s puppet proxy'
     property :realm, 'Realm', desc: 'Returns a realm object assigned to the host primary interface, returns nil if none is found'
     property :shortname, String, desc: 'Host shortname, usually a hostname without the domain part, e.g. my-host'
     property :subnet, 'Subnet', desc: 'Returns an IPv4 subnet object assigned to the host primary interface, returns nil if none is found'
@@ -162,9 +162,10 @@ class Host::Managed < Host::Base
     property :params, Hash, desc: 'Returns name=value object with host\'s parameters'
     property :pxe_loader_efi?, one_of: [true, false], desc: 'Returns true if PXE Loader uses EFI, false otherwise'
     property :created_at, 'ActiveSupport::TimeWithZone', desc: 'The time when the host was created'
+    property :comment, String, desc: 'Returns comment/description of this host'
   end
   class Jail < ::Safemode::Jail
-    allow :id, :name, :created_at, :diskLayout, :puppetmaster, :puppet_ca_server, :operatingsystem, :os, :environment, :ptable, :hostgroup,
+    allow :id, :name, :created_at, :diskLayout, :puppetmaster, :puppet_server, :puppet_ca_server, :operatingsystem, :os, :environment, :ptable, :hostgroup,
       :url_for_boot, :hostgroup, :compute_resource, :domain, :ip, :ip6, :mac, :shortname, :architecture,
       :model, :certname, :capabilities, :provider, :subnet, :subnet6, :token, :location, :organization, :provision_method,
       :image_build?, :pxe_build?, :otp, :realm, :nil?, :indent, :primary_interface,
@@ -172,7 +173,12 @@ class Host::Managed < Host::Base
       :managed_interfaces, :facts, :facts_hash, :root_pass, :sp_name, :sp_ip, :sp_mac, :sp_subnet, :use_image,
       :multiboot, :jumpstart_path, :install_path, :miniroot, :medium, :bmc_nic, :templates_used, :owner, :owner_type,
       :ssh_authorized_keys, :pxe_loader, :global_status, :get_status, :puppetca_token, :last_report, :build?, :smart_proxies, :host_param,
-      :virtual, :ram, :sockets, :cores, :params, :pxe_loader_efi?
+      :virtual, :ram, :sockets, :cores, :params, :pxe_loader_efi?, :comment
+
+    def puppetmaster
+      Foreman::Deprecation.deprecation_warning('3.0', 'Host#puppetmaster is deprecated, please use host_puppet_server macro instead')
+      @source.puppet_server
+    end
   end
 
   scope :recent, lambda { |interval = Setting[:outofsync_interval]|
@@ -734,6 +740,13 @@ autopart"', desc: 'to render the content of host partition table'
     return self[:root_pass] if self[:root_pass].present?
     return hostgroup.try(:root_pass) if hostgroup.try(:root_pass).present?
     Setting[:root_pass]
+  end
+
+  def root_pass_source
+    return N_("host") if self[:root_pass].present?
+    return N_("hostgroup") if hostgroup.try(:root_pass).present?
+    return N_("global setting") if Setting[:root_pass].present?
+    nil
   end
 
   include_in_clone :config_groups, :host_config_groups, :host_classes, :host_parameters, :lookup_values

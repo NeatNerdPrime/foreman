@@ -42,6 +42,18 @@ module Foreman
       class UnknownReportColumn < RenderingError
         MESSAGE = N_('Rendering failed, one or more unknown columns specified for ordering - "%{unknown}"').freeze
       end
+
+      class HostgroupNotFoundError < RenderingError
+        MESSAGE = N_('Hostgroup not found or not accessible').freeze
+      end
+
+      class UndefinedSetting < RenderingError
+        MESSAGE = N_("Undefined setting '%{setting}'").freeze
+      end
+
+      class UnsupportedOS < RenderingError
+        MESSAGE = N_('Unsupported or no operating system found for this host.').freeze
+      end
     end
   end
 end

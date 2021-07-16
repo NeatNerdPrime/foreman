@@ -6,6 +6,26 @@ FactoryBot.define do
     organizations { [Organization.find_by_name('Organization 1')] }
     locations { [Location.find_by_name('Location 1')] }
 
+    factory :centos_for_snapshots do
+      name { "CentOS Mirror" }
+      path { 'http://mirror.centos.org/centos/$major/os/x86_64' }
+    end
+
+    factory :debian_for_snapshots do
+      name { "Debian Mirror" }
+      path { 'http://ftp.debian.org/debian' }
+    end
+
+    factory :ubuntu_for_snapshots do
+      name { "Ubuntu Mirror" }
+      path { 'http://archive.ubuntu.com/ubuntu' }
+    end
+
+    trait :centos do
+      sequence(:name) { |n| "CentOS Mirror #{n}" }
+      sequence(:path) { 'http://mirror.centos.org/centos/$major/os/x86_64' }
+    end
+
     trait :coreos do
       sequence(:name) { |n| "CoreOS Mirror #{n}" }
       sequence(:path) { 'http://$release.release.core-os.net' }
@@ -16,6 +36,18 @@ FactoryBot.define do
       sequence(:name) { |n| "Flatcar Mirror #{n}" }
       sequence(:path) { 'http://$release.release.flatcar-linux.net' }
       os_family { 'Coreos' }
+    end
+
+    trait :fcos do
+      sequence(:name) { |n| "Fedora CoreOS Mirror #{n}" }
+      sequence(:path) { 'http://builds.coreos.fedoraproject.org' }
+      os_family { 'Fcos' }
+    end
+
+    trait :rhcos do
+      sequence(:name) { |n| "Red Hat CoreOS Mirror #{n}" }
+      sequence(:path) { 'http://mirror.openshift.com' }
+      os_family { 'Rhcos' }
     end
 
     trait :ubuntu do

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Intended for a production environment only
+puma-status /usr/share/foreman/tmp/puma.state

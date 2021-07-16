@@ -39,6 +39,11 @@ class Debian < Operatingsystem
     true
   end
 
+  # Helper text shown next to release name (do not use i18n)
+  def release_name_help
+    'bullseye, focal, buster, bionic, stretch, xenial...'
+  end
+
   def display_family
     "Debian"
   end
@@ -50,7 +55,7 @@ class Debian < Operatingsystem
     s.gsub!(/\(.+?\)/, '')
     s.squeeze! " "
     s.strip!
-    s += '.' + minor unless s.include?('.')
+    s += '.' + minor unless minor.blank? || s.include?('.')
     s.presence || description
   end
 

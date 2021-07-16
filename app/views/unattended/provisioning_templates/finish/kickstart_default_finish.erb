@@ -3,8 +3,10 @@ kind: finish
 name: Kickstart default finish
 model: ProvisioningTemplate
 oses:
+- AlmaLinux
 - CentOS
 - Fedora
+- Rocky
 %>
   <%#
   This template accepts the following parameters:
@@ -15,6 +17,7 @@ oses:
   - package_upgrade: boolean (default=true)
   - salt_master: string (default=undef)
   %>
+<%= snippet_if_exists(template_name + " custom pre") -%>
 <% if @host.subnet.respond_to?(:dhcp_boot_mode?) -%>
 <%= snippet 'kickstart_networking_setup' %>
 service network restart
@@ -22,8 +25,7 @@ service network restart
 
 <%
   rhel_compatible = @host.operatingsystem.family == 'Redhat' && @host.operatingsystem.name != 'Fedora'
-  pm_set = @host.puppetmaster.empty? ? false : true
-  puppet_enabled = pm_set || host_param_true?('force-puppet')
+  puppet_enabled = host_puppet_server.present? || host_param_true?('force-puppet')
   salt_enabled = host_param('salt_master') ? true : false
   chef_enabled = @host.respond_to?(:chef_proxy) && @host.chef_proxy
 %>
@@ -60,6 +62,7 @@ fi
 
 <%= snippet "blacklist_kernel_modules" %>
 
+<%= snippet_if_exists(template_name + " custom post") -%>
 <% if chef_enabled %>
 <%= snippet 'chef_client' %>
 <% end -%>
@@ -77,6 +80,7 @@ fi
 
 <% if host_param_true?('ansible_tower_provisioning') -%>
 <%= save_to_file('/root/ansible_provisioning_call.sh', snippet('ansible_tower_callback_script')) %>
+chmod +x /root/ansible_provisioning_call.sh
 /root/ansible_provisioning_call.sh
 <% end -%>
 

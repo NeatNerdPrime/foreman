@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`documentation links should have an external link to documentation 1`] = `
+<DropdownItem
+  key="documentationUrl"
+  onClick={[Function]}
+>
+  <QuestionCircleIcon
+    color="currentColor"
+    noVerticalAlign={false}
+    size="sm"
+  />
+   
+  Documentation
+</DropdownItem>
+`;

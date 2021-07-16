@@ -224,73 +224,34 @@ module ApplicationHelper
   end
 
   def flot_pie_chart(name, title, data, options = {})
-    Foreman::Deprecation.deprecation_warning('2.5', '#flot_pie_chart is by default rendered by react Donut chart with default configuration. In version 2.4 you can still opt-in the old behaviour by option use_legacy_flot: true.')
-    if options[:use_legacy_flot]
-      data = data.map { |k, v| {:label => k.to_s.humanize, :data => v} } if data.is_a?(Hash)
-      data.map { |element| element[:label] = truncate(element[:label], :length => 16) }
-      header = content_tag(:h4, options[:show_title] ? title : '', :class => 'ca pie-title', :'data-original-title' => _("Expand the chart"), :rel => 'twipsy')
-      link_to_function(header, "expand_chart(this)") +
-          content_tag(:div, nil,
-            { :id    => name,
-              :class => 'statistics-pie',
-              :data  => {
-                :title  => title,
-                :series => data,
-                :url    => options[:search] ? "#{request.script_name}/hosts?search=#{URI.encode(options.delete(:search))}" : "#",
-              },
-            }.merge(options))
-    else
-      data = data.map { |k, v| [k.to_s.humanize, v] } if data.is_a?(Hash)
-      react_component('ChartBox', type: 'donut',
-                                  status: 'RESOLVED',
-                                  title: title,
-                                  chart: {
-                                    data: data,
-                                    search: options[:search] ? hosts_path(search: options[:search]) : nil,
-                                  })
-    end
+    Foreman::Deprecation.deprecation_warning('3.1', '#flot_pie_chart is now rendered by react Donut chart with default configuration. '\
+                                                    'Please render the Donut chart component directly.')
+    data = data.map { |k, v| [k.to_s.humanize, v] } if data.is_a?(Hash)
+    react_component('ChartBox', type: 'donut',
+                                status: 'RESOLVED',
+                                title: title,
+                                chart: {
+                                  data: data,
+                                  search: options[:search] ? hosts_path(search: options[:search]) : nil,
+                                })
   end
 
   def flot_chart(name, xaxis_label, yaxis_label, data, options = {})
+    Foreman::Deprecation.deprecation_warning('3.1', '#flot_chart is rendering its react version by default now. '\
+                                                    'Please move to rendering React Component directly.')
     data = data.map { |k, v| {:label => k.to_s.humanize, :data => v} } if data.is_a?(Hash)
-    content_tag(:div, nil,
-      { :id    => name,
-        :class => 'statistics-chart',
-        :data  => {
-          :'legend-options' => options.delete(:legend),
-          :'xaxis-label'    => xaxis_label,
-          :'yaxis-label'    => yaxis_label,
-          :series => data,
-        },
-      }.merge(options))
+    time = ['time'].concat(data[0][:data].map { |d| d.first })
+    data = data.map { |d_hash| [d_hash[:label]].concat(d_hash[:data].map { |d| d.second }) }
+    data.unshift(time)
+    react_component('AreaChart', id: name, xAxisLabel: xaxis_label, yAxisLabel: yaxis_label, data: data)
   end
 
   def flot_bar_chart(name, xaxis_label, yaxis_label, data, options = {})
-    i = 0
-    ticks = nil
-    if data.is_a?(Array)
-      data = data.map do |kv|
-        ticks ||= []
-        ticks << [i += 1, kv[0].to_s.humanize]
-        [i, kv[1]]
-      end
-    elsif  data.is_a?(Hash)
-      data = data.map do |k, v|
-        ticks ||= []
-        ticks << [i += 1, k.to_s.humanize]
-        [i, v]
-      end
+    Foreman::Deprecation.deprecation_warning('3.1', '#flot_bar_chart is rendering its react version now. '\
+                                                    'Please move to rendering React Component directly.')
+    content_tag(:div, id: name) do
+      react_component('BarChart', data: data, xAxisLabel: xaxis_label, yAxisLabel: yaxis_label)
     end
-
-    content_tag(:div, nil,
-      { :id   => name,
-        :data => {
-          :'xaxis-label' => xaxis_label,
-          :'yaxis-label' => yaxis_label,
-          :chart   => data,
-          :ticks   => ticks,
-        },
-      }.merge(options))
   end
 
   def select_action_button(title, options = {}, *args)
@@ -487,7 +448,7 @@ module ApplicationHelper
   end
 
   def notifications
-    react_component('ToastNotifications', {railsMessages: toast_notifications_data})
+    Foreman::Deprecation.deprecation_warning('3.1', 'notifications method is deprecated, and instead, toasts alerts are handled in the root of the React app.')
   end
 
   def toast_notifications_data

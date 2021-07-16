@@ -32,11 +32,8 @@ export function templateSelected(item) {
       // As Instance Type values will take precence over templates values,
       // we don't update memory/cores values if  instance type is already selected
       if (!$('#host_compute_attributes_instance_type').val()) {
-        $('[id$=_memory]')
-          .val(result.memory)
-          .trigger('change');
-        $('[id$=_cores]').val(result.cores);
-        $('[id$=_sockets]').val(result.sockets);
+        updateCoresAndSockets(result);
+        setMemoryInputProps({ value: result.memory });
         $('[id$=_ha]').prop('checked', result.ha);
       }
       $('#network_interfaces')
@@ -78,14 +75,13 @@ export function instanceTypeSelected(item) {
       data: `instance_type_id=${instanceType}`,
       success(result) {
         if (result.name != null) {
-          $('[id$=_memory]')
-            .val(result.memory)
-            .trigger('change');
-          $('[id$=_cores]').val(result.cores);
-          $('[id$=_sockets]').val(result.sockets);
+          setMemoryInputProps({ value: result.memory });
+          updateCoresAndSockets(result);
           $('[id$=_ha]').prop('checked', result.ha);
         }
-        ['_memory', '_cores', '_sockets', '_ha'].forEach(name =>
+        setMemoryInputProps({ disabled: result.name != null });
+        disableCoresAndSockets(result);
+        ['_ha'].forEach(name =>
           $(`[id$=${name}]`).prop('readOnly', result.name != null)
         );
         const instanceTypeSelector = $(
@@ -144,6 +140,46 @@ function addVolume({
   $(`[id$=${newId}_storage_domain]`)
     .next()
     .hide();
+}
+
+function setMemoryInputProps(props) {
+  const memoryInputElement = getComponentByWrapperId('memory-input');
+  memoryInputElement.reactProps = {
+    ...memoryInputElement.reactProps,
+    ...props,
+  };
+}
+
+function updateCoresAndSockets(result) {
+  const coresInputElement = getComponentByWrapperId('cores-input');
+  coresInputElement.reactProps = {
+    ...coresInputElement.reactProps,
+    value: result.cores,
+  };
+  const socketInputElement = getComponentByWrapperId('sockets-input');
+  socketInputElement.reactProps = {
+    ...socketInputElement.reactProps,
+    value: result.sockets,
+  };
+}
+
+function disableCoresAndSockets(result) {
+  const coresInputElement = getComponentByWrapperId('cores-input');
+  coresInputElement.reactProps = {
+    ...coresInputElement.reactProps,
+    disabled: result.name != null,
+  };
+  const socketInputElement = getComponentByWrapperId('sockets-input');
+  socketInputElement.reactProps = {
+    ...socketInputElement.reactProps,
+    disabled: result.name != null,
+  };
+}
+
+function getComponentByWrapperId(wrapperId) {
+  return document
+    .getElementById(wrapperId)
+    .getElementsByTagName('foreman-react-component')[0];
 }
 
 function disableElement(element) {

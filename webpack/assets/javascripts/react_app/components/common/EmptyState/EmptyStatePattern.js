@@ -33,12 +33,14 @@ const EmptyStatePattern = props => {
     const {
       label = __('For more information please see '), // eslint-disable-line react/prop-types
       buttonLabel = __('documentation'), // eslint-disable-line react/prop-types
-      url, // eslint-disable-line react/prop-types
+      url = '#', // eslint-disable-line react/prop-types
     } = documentation;
     return (
       <span>
         {label}
-        <a href={url}>{buttonLabel}</a>
+        <a href={url} target="_blank" rel="external noreferrer noopener">
+          {buttonLabel}
+        </a>
       </span>
     );
   };
@@ -69,9 +71,7 @@ EmptyStatePattern.propTypes = emptyStatePatternPropTypes;
 EmptyStatePattern.defaultProps = {
   icon: 'add-circle-o',
   secondaryActions: [],
-  documentation: {
-    url: '#',
-  },
+  documentation: null,
   action: null,
   iconType: 'pf',
 };

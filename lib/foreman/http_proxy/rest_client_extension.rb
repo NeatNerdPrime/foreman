@@ -8,6 +8,18 @@ module Foreman
         end
         super
       end
+
+      def net_http_object(hostname, port)
+        p_uri = proxy_uri
+
+        # no proxy set or proxy explicitly set to none
+        return super unless p_uri
+
+        proxy_pass = CGI.unescape(p_uri.password) if p_uri.password
+        proxy_user = CGI.unescape(p_uri.user) if p_uri.user
+        Net::HTTP.new(hostname, port,
+          p_uri.hostname, p_uri.port, proxy_user, proxy_pass)
+      end
     end
   end
 end

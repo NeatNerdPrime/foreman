@@ -33,7 +33,7 @@ module ComputeResourcesVmsHelper
         when Array
           value.map { |v| v.try(:name) || v.try(:to_s) || v }.to_sentence
         when Fog::Time, Time
-          _("%s ago") % time_ago_in_words(value)
+          date_time_relative_value(value)
         when nil
           _("N/A")
         else
@@ -51,7 +51,7 @@ module ComputeResourcesVmsHelper
 
   def spice_data_attributes(console)
     options = {
-      :port     => console[:proxy_port],
+      :port     => console[:port],
       :password => console[:password],
     }
     if supports_spice_xpi?

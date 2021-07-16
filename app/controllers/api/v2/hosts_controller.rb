@@ -42,7 +42,11 @@ module Api
         @hosts = action_scope_for(:index, resource_scope_for_index)
 
         if params[:thin]
-          @subtotal = @hosts.total_entries
+          @subtotal = if @hosts.respond_to?(:total_entries)
+                        @hosts.total_entries
+                      else
+                        @hosts.size
+                      end
           @hosts = @hosts.reorder(:name).distinct.pluck(:id, :name)
           render 'thin'
           return
@@ -195,6 +199,7 @@ module Api
             @status = @host.build_global_status
           else
             @status = @host.get_status(HostStatus.find_status_by_humanized_name(params[:type]))
+            render :json => { :error => _("Status %s does not exist.") % params[:type] }, :status => :unprocessable_entity if @status.type.empty?
         end
       end
 

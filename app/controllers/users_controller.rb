@@ -44,7 +44,7 @@ class UsersController < ApplicationController
     if @user.update(user_params)
       update_sub_hostgroups_owners
 
-      process_success((editing_self? && !current_user.allowed_to?({:controller => 'users', :action => 'index'})) ? { :success_redirect => hosts_path } : {})
+      process_success((editing_self? && !current_user.allowed_to?({:controller => 'users', :action => 'index'})) ? { :success_redirect => hosts_path } : { :success_redirect => users_path })
     else
       process_error
     end
@@ -129,7 +129,7 @@ class UsersController < ApplicationController
       if user.nil?
         # failed to authenticate, and/or to generate the account on the fly
         inline_error _("Incorrect username or password")
-        logger.warn("Failed login attempt from #{request.ip} with username '#{params[:login].try(:[], 'login')}'")
+        logger.warn("Failed login attempt from #{request.remote_ip} with username '#{params[:login].try(:[], 'login')}'")
         count_login_failure
         telemetry_increment_counter(:failed_ui_logins)
         redirect_to login_users_path

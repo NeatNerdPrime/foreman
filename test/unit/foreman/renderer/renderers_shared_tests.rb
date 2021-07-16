@@ -15,7 +15,7 @@ module RenderersSharedTests
       @scope = Class.new(Foreman::Renderer::Scope::Base) do
         include Foreman::Renderer::Scope::Macros::Base
         include Foreman::Renderer::Scope::Macros::SnippetRendering
-      end.send(:new, host: @host, source: source)
+      end.send(:new, host: @host, source: source, variables: { x: 'test' })
     end
 
     test "should evaluate template variables" do
@@ -127,6 +127,13 @@ module RenderersSharedTests
       assert_equal '12', renderer.render(source, @scope)
     end
 
+    test "should pass variables from template to snippet" do
+      snippet = FactoryBot.create(:provisioning_template, :snippet, :template => "<%= @x -%>")
+      template = OpenStruct.new(content: "<%= snippet('#{snippet.name}') %>")
+
+      assert_equal renderer.render(template, @scope), 'test'
+    end
+
     test "should render a save_to_file macro" do
       source = OpenStruct.new(content: '<%= save_to_file("/etc/puppet/puppet.conf", "[main]\nserver=example.com\n") %>')
       assert_nothing_raised do
@@ -215,9 +222,22 @@ module RenderersSharedTests
     test "foreman_server_ca_cert - not existing file" do
       Setting[:ssl_ca_file] = 'not-existing-file'
       source = OpenStruct.new(content: '<%= foreman_server_ca_cert %>')
-      assert_raise Foreman::Exception do
+      error = assert_raise Foreman::Exception do
         renderer.render(source, @scope)
       end
+
+      assert_includes error.message, '[Foreman::Exception]: No such file or directory'
+    end
+
+    test "foreman_server_ca_cert - blank setting" do
+      Setting[:ssl_ca_file] = ''
+      source = OpenStruct.new(content: '<%= foreman_server_ca_cert %>')
+      error = assert_raise Foreman::Renderer::Errors::UndefinedSetting do
+        renderer.render(source, @scope)
+      end
+
+      # assert_includes error.message, "No CA file set, check the 'SSL CA file' in Settings > Authentication"
+      assert_includes error.message, "Undefined setting 'SSL CA file'"
     end
 
     context 'renderer for template with user input used' do

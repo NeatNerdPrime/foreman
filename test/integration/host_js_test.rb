@@ -200,6 +200,7 @@ class HostJSTest < IntegrationTestWithJavascript
       assert page.has_link?('Parameters', :href => '#params')
       click_link 'Parameters'
       assert page.has_no_selector?(id)
+      page.find('#global_parameters_table a[title="Remove Parameter"]').hover
       page.find('#global_parameters_table a[data-original-title="Remove Parameter"]').click
       assert page.has_selector?(id)
     end
@@ -256,7 +257,7 @@ class HostJSTest < IntegrationTestWithJavascript
       select2(hostgroup.name, :from => 'host_hostgroup_id')
       wait_for_ajax
       click_link('Virtual Machine')
-      cpus_field = page.find_field('host_compute_attributes_cpus')
+      cpus_field = page.find_field('host[compute_attributes][cpus]')
       assert_equal '1', cpus_field.value
 
       switch_form_tab_to_interfaces
@@ -270,7 +271,7 @@ class HostJSTest < IntegrationTestWithJavascript
       select2(compute_profile.name, :from => 'host_compute_profile_id')
 
       click_link('Virtual Machine')
-      cpus_field = page.find_field('host_compute_attributes_cpus')
+      cpus_field = page.find_field('host[compute_attributes][cpus]')
       assert_equal '2', cpus_field.value
 
       switch_form_tab_to_interfaces

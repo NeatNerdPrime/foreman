@@ -6,12 +6,12 @@ import DonutChart from '../common/charts/DonutChart';
 import Loader from '../common/Loader';
 import MessageBox from '../common/MessageBox';
 import { STATUS } from '../../constants';
-import { navigateToSearch } from '../../../services/charts/DonutChartService';
 import {
   sprintf,
   ngettext as n__,
   translate as __,
 } from '../../../react_app/common/I18n';
+import './FactChart.scss';
 
 const FactChart = ({
   hostsCount,
@@ -24,13 +24,10 @@ const FactChart = ({
   id,
   title,
 }) => {
-  const handleChartClick =
-    search && search.match(/=$/) ? null : navigateToSearch.bind(null, search);
-
   const chartProps = {
     data: chartData,
     key: `chart-${id}`,
-    onclick: handleChartClick,
+    searchUrl: search && !search.match(/=$/) ? search : null,
   };
 
   const chart = <DonutChart {...chartProps} config="large" />;
@@ -55,7 +52,7 @@ const FactChart = ({
   );
 
   return (
-    <div>
+    <div className="fact-chart">
       <OverlayTrigger placement="top" overlay={tooltip}>
         <Button onClick={openModal}>{__('View Chart')}</Button>
       </OverlayTrigger>
@@ -75,7 +72,7 @@ const FactChart = ({
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <div id="factChartModalBody">
+            <div className="modal-body">
               <Loader status={status}>{[chart, error]}</Loader>
             </div>
           </Modal.Body>

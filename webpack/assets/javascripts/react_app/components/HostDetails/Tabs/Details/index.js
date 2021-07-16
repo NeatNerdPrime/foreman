@@ -12,7 +12,7 @@ import { STATUS } from '../../../../constants';
 import './Details.css';
 
 const DetailsTab = ({ response, status }) => (
-  <div className="details-tab">
+  <div className="host-details-tab-item details-tab">
     <Flex
       spaceItems={{ modifier: 'spaceItemsXl' }}
       direction={{ default: 'column' }}
@@ -24,7 +24,7 @@ const DetailsTab = ({ response, status }) => (
     </Flex>
     <Grid hasGutter>
       <GridItem xl2={2} md={3} lg={2} rowSpan={3}>
-        <Properties hostData={response} isLoading={status === STATUS.PENDING} />
+        <Properties hostData={response} status={status} />
       </GridItem>
       <GridItem xl2={3} md={6} lg={5}>
         <ParametersCard paramters={response.all_parameters} />

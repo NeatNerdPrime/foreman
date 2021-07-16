@@ -21,6 +21,10 @@ module Api
       param :operatingsystem_id, :number, desc: N_("ID of the Operating System to register the host in.")
       param :setup_insights, :bool, desc: N_("Set 'host_registration_insights' parameter for the host. If it is set to true, insights client will be installed and registered on Red Hat family operating systems.")
       param :setup_remote_execution, :bool, desc: N_("Set 'host_registration_remote_execution' parameter for the host. If it is set to true, SSH keys will be installed on the host.")
+      param :packages, String, desc: N_("Packages to install on the host when registered. Can be set by `host_packages` parameter. Example: `pkg1 pkg2`")
+      param :update_packages, :bool, desc: N_("Update all packages on the host")
+      param :repo, String, desc: N_("Repository URL / details, for example for Debian OS family: 'deb http://deb.example.com/ buster 1.0', for Red Hat OS family: 'http://yum.theforeman.org/client/latest/el8/x86_64/'")
+      param :repo_gpg_key_url, String, desc: N_("URL of the GPG key for the repository")
       def global
         find_global_registration
 
@@ -32,7 +36,7 @@ module Api
         render plain: @provisioning_template.render(variables: @global_registration_vars).html_safe
       end
 
-      api :POST, "/register", N_("Find or create a host and render the Host registration template")
+      api :POST, "/register", N_("Find or create a host and render the 'Host initial configuration' template")
       param :host, Hash, required: true, action_aware: true do
         param :name, String, required: true
         param :location_id, :number, required: true
@@ -73,10 +77,9 @@ module Api
           ActiveRecord::Base.transaction do
             find_host
             prepare_host
-            host_setup_insights
-            host_setup_remote_execution
+            setup_host_params
             host_setup_extension
-            @template = @host.registration_template
+            @template = @host.initial_configuration_template
             raise ActiveRecord::Rollback if @template.nil?
           end
         rescue ::Foreman::Exception => e
@@ -85,7 +88,7 @@ module Api
         end
 
         unless @template
-          not_found N_("Unable to find registration template for host %{host} running %{os}, associate the registration template for this OS first") % { host: @host.name, os: @host.operatingsystem }
+          not_found N_("Unable to find 'Host initial configuration' template for host %{host} running %{os}, associate the 'Host initial configuration' template for this OS first") % { host: @host.name, os: @host.operatingsystem }
           return
         end
 
@@ -107,13 +110,10 @@ module Api
       end
 
       def prepare_host
-        hostgroup_id = host_params('host')['hostgroup_id']
+        host_attributes = @host.apply_inherited_attributes(host_params('host'))
 
-        @host.assign_attributes(host_params('host'))
-        # Hardcoded params so they can't be overridden
-        @host.hostgroup = Hostgroup.authorized(:view_hostgroups).find(hostgroup_id) if hostgroup_id
+        @host.assign_attributes(host_attributes)
         @host.owner = User.current
-
         @host.save!
       end
 

@@ -140,6 +140,10 @@ class PuppetFactParser < FactParser
     facts.dig('processors', 'count') || facts['processorcount']
   end
 
+  def disks_total
+    facts['disks']&.values&.sum { |disk| disk&.fetch('size_bytes', 0).to_i }
+  end
+
   private
 
   # remove when dropping support for facter < 3.0
@@ -219,7 +223,13 @@ class PuppetFactParser < FactParser
       '1.0'
     when /Debian/i
       return "99" if facts[:lsbdistcodename] =~ /sid/
-      facts.dig(:os, :release, :full) || facts[:lsbdistrelease] || facts[:operatingsystemrelease]
+      release = facts.dig(:os, :release, :full) || facts[:lsbdistrelease] || facts[:operatingsystemrelease]
+      case release
+      when 'bullseye/sid' # Debian Bullseye testing will be 11
+        '11'
+      else
+        release
+      end
     else
       facts.dig(:os, :release, :full) || facts[:lsbdistrelease] || facts[:operatingsystemrelease]
     end

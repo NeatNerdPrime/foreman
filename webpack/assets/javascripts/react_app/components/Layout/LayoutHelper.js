@@ -3,10 +3,6 @@
 
 import { isEmpty } from 'lodash';
 import PropTypes from 'prop-types';
-import {
-  changeOrganization,
-  changeLocation,
-} from '../../../foreman_navigation';
 import { translate as __ } from '../../common/I18n';
 import {
   removeLastSlashFromPath,
@@ -56,7 +52,7 @@ export const combineMenuItems = data => {
       name: __(item.name),
       children: translatedChildren,
       // Hiding user if not on Mobile view
-      className: item.name === 'User' ? 'visible-xs-block' : '',
+      className: item.name === 'User' ? 'hidden-nav-lg' : '',
     };
     items.push(translatedItem);
   });
@@ -71,7 +67,6 @@ const createOrgItem = orgs => {
   const anyOrg = {
     name: __('Any Organization'),
     onClick: () => {
-      changeOrganization();
       window.location.assign(foremanUrl('/organizations/clear'));
     },
   };
@@ -80,9 +75,8 @@ const createOrgItem = orgs => {
   orgs.forEach(org => {
     const childObject = {
       type: org.type,
-      name: isEmpty(org.title) ? org.title : __(org.title),
+      name: org.title,
       onClick: () => {
-        changeOrganization(__(org.title));
         window.location.assign(org.href);
       },
     };
@@ -95,7 +89,7 @@ const createOrgItem = orgs => {
     icon: 'fa fa-building',
     children: childrenArray,
     // Hiding Organizations if not on Mobile view
-    className: 'visible-xs-block',
+    className: 'organization-menu hidden-nav-lg',
   };
   return orgItem;
 };
@@ -104,7 +98,6 @@ const createLocationItem = locations => {
   const anyLoc = {
     name: __('Any Location'),
     onClick: () => {
-      changeLocation();
       window.location.assign(foremanUrl('/locations/clear'));
     },
   };
@@ -113,9 +106,8 @@ const createLocationItem = locations => {
   locations.forEach(loc => {
     const childObject = {
       type: loc.type,
-      name: isEmpty(loc.title) ? loc.title : __(loc.title),
+      name: loc.title,
       onClick: () => {
-        changeLocation(__(loc.title));
         window.location.assign(loc.href);
       },
     };
@@ -128,7 +120,7 @@ const createLocationItem = locations => {
     icon: 'fa fa-globe',
     children: childrenArray,
     // Hiding Locations if not on Mobile view
-    className: 'visible-xs-block',
+    className: 'location-menu hidden-nav-lg',
   };
   return locItem;
 };
@@ -167,17 +159,33 @@ export const userPropType = PropTypes.shape({
   ),
 });
 
+export const dataPropType = {
+  brand: PropTypes.string,
+  stop_impersonation_url: PropTypes.string.isRequired,
+  instance_title: PropTypes.string,
+  menu: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      icon: PropTypes.string.isRequired,
+      children: PropTypes.any,
+    })
+  ),
+  locations: locationPropType,
+  orgs: organizationPropType,
+  root: PropTypes.string.isRequired,
+  logo: PropTypes.string.isRequired,
+  notification_url: PropTypes.string.isRequired,
+  user: userPropType,
+};
+
 export const layoutPropTypes = {
   children: PropTypes.node,
-  currentOrganization: PropTypes.string,
-  currentLocation: PropTypes.string,
   isLoading: PropTypes.bool,
   isCollapsed: PropTypes.bool,
   activeMenu: PropTypes.string,
   navigate: PropTypes.func,
   changeActiveMenu: PropTypes.func,
-  changeOrganization: PropTypes.func,
-  changeLocation: PropTypes.func,
   expandLayoutMenus: PropTypes.func,
   collapseLayoutMenus: PropTypes.func,
   items: PropTypes.arrayOf(
@@ -196,29 +204,7 @@ export const layoutPropTypes = {
       ),
     })
   ),
-  data: PropTypes.shape({
-    brand: PropTypes.string,
-    stop_impersonation_url: PropTypes.string.isRequired,
-    instance_title: PropTypes.string,
-    menu: PropTypes.arrayOf(
-      PropTypes.shape({
-        type: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-        icon: PropTypes.string.isRequired,
-        children: PropTypes.any,
-      })
-    ),
-    locations: locationPropType,
-    orgs: organizationPropType,
-    root: PropTypes.string.isRequired,
-    logo: PropTypes.string.isRequired,
-    notification_url: PropTypes.string.isRequired,
-    taxonomies: PropTypes.shape({
-      locations: PropTypes.bool.isRequired,
-      organizations: PropTypes.bool.isRequired,
-    }),
-    user: userPropType,
-  }),
+  data: PropTypes.shape(dataPropType),
 };
 
 export const layoutDefaultProps = {
@@ -230,8 +216,6 @@ export const layoutDefaultProps = {
   activeMenu: '',
   navigate: noop,
   changeActiveMenu: noop,
-  changeOrganization: noop,
-  changeLocation: noop,
   expandLayoutMenus: noop,
   collapseLayoutMenus: noop,
 };

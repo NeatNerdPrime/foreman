@@ -542,7 +542,7 @@ class HostTest < ActiveSupport::TestCase
     host.refresh_statuses
     assert_equal 0, host.global_status
     refute_empty host.host_statuses
-    assert host.get_status(HostStatus::BuildStatus).new_record? # BuildStatus was not #relevant? for unmanaged host
+    refute host.get_status(HostStatus::BuildStatus).new_record?
     refute host.get_status(HostStatus::ConfigurationStatus).new_record?
   end
 
@@ -1254,7 +1254,7 @@ class HostTest < ActiveSupport::TestCase
         :provision => true },
     ]
     refute host.valid?
-    assert_equal ['host already has provision interface'], host.errors['interfaces.provision']
+    assert_equal ['interface is already set on the host'], host.errors['interfaces.provision']
     assert_equal 1, host.interfaces.count
   end
 
@@ -2748,7 +2748,7 @@ class HostTest < ActiveSupport::TestCase
     host.mac = 'AA:AA:AA:AA:AA:AA'
     clone = host.setup_clone
     refute_equal host.object_id, clone.object_id
-    assert_equal 'AA:AA:AA:AA:AA:AA', host.mac
+    assert_equal 'aa:aa:aa:aa:aa:aa', host.mac
     refute_equal host.mac, clone.mac
     assert_equal original_mac, clone.mac
     assert_equal original_mac, clone.provision_interface.mac

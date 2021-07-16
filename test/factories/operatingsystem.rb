@@ -81,6 +81,24 @@ FactoryBot.define do
       title { 'Flatcar 2345.3.0' }
     end
 
+    factory :fcos, class: Fcos do
+      sequence(:name) { 'FedoraCoreOS' }
+      major { '32' }
+      minor { '20200907.3.0' }
+      type { 'Fcos' }
+      release_name { 'stable' }
+      title { 'FedoraCoreOS 32.20200907.3.0' }
+    end
+
+    factory :rhcos, class: Rhcos do
+      sequence(:name) { 'RedHatCoreOS' }
+      major { '4' }
+      minor { '5' }
+      release_name { '6' }
+      type { 'Rhcos' }
+      title { 'RedHatCoreOS 4.5.6' }
+    end
+
     factory :ubuntu14_10, class: Debian do
       sequence(:name) { 'Ubuntu' }
       major { '14' }
@@ -122,6 +140,41 @@ FactoryBot.define do
       minor { '5' }
       type { 'Redhat' }
       title { 'Red Hat Enterprise Linux 7.5' }
+    end
+
+    factory :for_snapshots_centos_7_0, class: Redhat do
+      name { 'CentOS' }
+      major { '7' }
+      minor { '0' }
+      type { 'Redhat' }
+      title { 'CentOS 7.0' }
+      architectures { [FactoryBot.build(:architecture, :for_snapshots_x86_64)] }
+      media { [FactoryBot.build(:centos_for_snapshots)] }
+      ptables { [FactoryBot.build(:ptable, name: 'ptable')] }
+    end
+
+    factory :for_snapshots_debian_10, class: Debian do
+      name { 'Debian' }
+      major { '10' }
+      minor { '0' }
+      type { 'Debian' }
+      release_name { 'wheezy' }
+      title { 'Debian Wheezy' }
+      architectures { [FactoryBot.build(:architecture, :for_snapshots_x86_64)] }
+      media { [FactoryBot.build(:debian_for_snapshots)] }
+      ptables { [FactoryBot.build(:ptable, name: 'ptable')] }
+    end
+
+    factory :for_snapshots_ubuntu_20, class: Debian do
+      name { 'Ubuntu' }
+      major { '20' }
+      minor { '04' }
+      type { 'Debian' }
+      release_name { 'focal' }
+      title { 'Ubuntu Focal' }
+      architectures { [FactoryBot.build(:architecture, :for_snapshots_x86_64)] }
+      media { [FactoryBot.build(:ubuntu_for_snapshots)] }
+      ptables { [FactoryBot.build(:ptable, name: 'ptable')] }
     end
 
     factory :altlinux, class: Altlinux do

@@ -1,7 +1,5 @@
-//= require jquery-ui/widgets/spinner
 //= require bootstrap
 //= require patternfly
-//= require vendor
 //= require jquery.extentions
 //= require jquery.multi-select
 //= require hidden_values
@@ -34,28 +32,11 @@ function onContentLoad() {
   }
 
   // highlight tabs with errors
-  var errorFields = $('.tab-content .has-error');
-  errorFields.parents('.tab-pane').each(function() {
-    $('a[href="#' + this.id + '"]').addClass('tab-error');
-  });
-  $('.tab-error')
-    .first()
-    .click();
-  $('.nav-pills .tab-error')
-    .first()
-    .click();
-  errorFields
-    .first()
-    .find('.form-control')
-    .focus();
+  tfm.tools.highlightTabErrors();
 
-  $('a[rel="popover"]').popover();
+  $('body').popover({selector: 'a[rel="popover"]'});
   tfm.tools.activateTooltips();
   tfm.tools.activateDatatables();
-
-  $('a[disabled="disabled"]').click(function(event) {
-    return handleDisabledClick(event, this);
-  });
 
   // allow opening new window for selected links
   $('a[rel="external"]').attr('target', '_blank');
@@ -166,10 +147,15 @@ function mark_params_override() {
   $('a[rel="popover"]').popover();
 }
 
-function add_fields(target, association, content) {
+function add_fields(target, association, content, direction) {
+  direction = direction ? direction : 'append';
   var new_id = new Date().getTime();
   var regexp = new RegExp('new_' + association, 'g');
-  $(target).append(content.replace(regexp, new_id));
+  if (direction == 'append') {
+    $(target).append(content.replace(regexp, new_id));
+  } else {
+    $(target).prepend(content.replace(regexp, new_id));
+  }
 }
 
 $(document).ready(function() {
@@ -292,7 +278,7 @@ function filter_by_level(item) {
 }
 function show_release(element) {
   var os_family = $(element).val();
-  if ($.inArray(os_family, ['Debian', 'Solaris', 'Coreos']) != -1) {
+  if ($.inArray(os_family, ['Debian', 'Solaris', 'Coreos', 'Fcos', 'Rhcos']) != -1) {
     $('#release_name').show();
   } else {
     $('#release_name').hide();
@@ -450,7 +436,6 @@ function reloadOnAjaxComplete(element) {
   tfm.tools.hideSpinner();
   tfm.tools.activateTooltips();
   activate_select2(':root');
-  tfm.numFields.initAll();
   tfm.advancedFields.initAdvancedFields();
   tfm.templateInputs.initTypeChanges();
 }

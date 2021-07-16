@@ -3,10 +3,18 @@ kind: provision
 name: Kickstart default
 model: ProvisioningTemplate
 oses:
+- AlmaLinux
 - CentOS
 - Fedora
 - RedHat
-%>
+- Rocky
+test_on:
+- host4dhcp
+- host6dhcp
+- host4and6dhcp
+- host4static
+- host6static
+-%>
 <%#
 This template accepts the following parameters:
 - lang: string (default="en_US.UTF-8")
@@ -28,6 +36,7 @@ This template accepts the following parameters:
 - disable-uek: boolean (default=false)
 - use-ntp: boolean (default depends on OS release)
 - fips_enabled: boolean (default=false)
+- encrypt_grub: boolean (default=false)
 
 Reference links:
 https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/installation_guide/s1-kickstart2-options
@@ -44,14 +53,13 @@ https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/pe
   os_minor = @host.operatingsystem.minor.to_i
   realm_compatible = (@host.operatingsystem.name == 'Fedora' && os_major >= 20) || (rhel_compatible && os_major >= 7)
   # safemode renderer does not support unary negation
-  pm_set = @host.puppetmaster.empty? ? false : true
   proxy_uri = host_param('http-proxy') ? "http://#{host_param('http-proxy')}:#{host_param('http-proxy-port')}" : nil
   proxy_string = proxy_uri ? " --proxy=#{proxy_uri}" : ''
-  puppet_enabled = pm_set || host_param_true?('force-puppet')
+  puppet_enabled = host_puppet_server.present? || host_param_true?('force-puppet')
   salt_enabled = host_param('salt_master') ? true : false
   chef_enabled = @host.respond_to?(:chef_proxy) && @host.chef_proxy
   section_end = (rhel_compatible && os_major <= 5) ? '' : '%end'
-  use_ntp = host_param_true?('use-ntp') || (is_fedora && os_major < 16) || (rhel_compatible && os_major <= 7)
+  use_ntp = host_param_true?('use-ntp', (is_fedora && os_major < 16) || (rhel_compatible && os_major <= 7))
   iface = @host.provision_interface
   appstream_present = false
 -%>
@@ -187,11 +195,7 @@ authselect --useshadow --passalgo=<%= @host.operatingsystem.password_hash.downca
 <% else -%>
 authconfig --useshadow --passalgo=<%= @host.operatingsystem.password_hash.downcase || 'sha256' %> --kickstart
 <% end -%>
-<% if use_ntp -%>
-timezone --utc <%= host_param('time-zone') || 'UTC' %>
-<% else -%>
 timezone --utc <%= host_param('time-zone') || 'UTC' %> <%= host_param('ntp-server') ? "--ntpservers #{host_param('ntp-server')}" : '' %>
-<% end -%>
 
 <% if rhel_compatible -%>
 services --disabled gpm,sendmail,cups,pcmcia,isdn,rawdevices,hpoj,bluetooth,openibd,avahi-daemon,avahi-dnsconfd,hidd,hplip,pcscd
@@ -208,10 +212,10 @@ repo --name="Server-Mysql"
 
 <% if @host.operatingsystem.name == 'Fedora' && os_major <= 16 -%>
 # Bootloader exception for Fedora 16:
-bootloader --append="<%= host_param('bootloader-append') || 'nofb quiet splash=quiet' %> <%= ks_console %>" <%= @grub_pass %>
+bootloader --append="<%= host_param('bootloader-append') || 'nofb quiet splash=quiet' %> <%= ks_console %>" <%= grub_pass %>
 part biosboot --fstype=biosboot --size=1
 <% else -%>
-bootloader --location=mbr --append="<%= host_param('bootloader-append') || 'nofb quiet splash=quiet' %>" <%= @grub_pass %>
+bootloader --location=mbr --append="<%= host_param('bootloader-append') || 'nofb quiet splash=quiet' %>" <%= grub_pass %>
 <% if os_major == 5 -%>
 key --skip
 <% end -%>
@@ -239,9 +243,6 @@ chrony
 <% end -%>
 wget
 @Core
-<% if os_major >= 6 -%>
-redhat-lsb-core
-<% end -%>
 <% if host_param_true?('fips_enabled') -%>
 <%=   snippet 'fips_packages' %>
 <% end -%>
@@ -329,7 +330,7 @@ touch /tmp/foreman_built
 
 # copy %pre log files into chroot
 %post --nochroot
-cp -vf /tmp/*.pre.*.log /tmp/sysimage/root/
+cp -vf /tmp/*.pre.*.log /mnt/sysimage/root/
 <%= section_end %>
 
 %post --log=/root/install.post.custom.log

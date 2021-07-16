@@ -30,11 +30,9 @@ Foreman::Application.routes.draw do
     'hostgroups',
     'hosts',
     'http_proxies',
-    'locations',
     'media',
     'models',
     'operatingsystems',
-    'organizations',
     'provisioning_templates',
     'ptables',
     'puppetclass_lookup_keys',
@@ -130,8 +128,10 @@ Foreman::Application.routes.draw do
         get 'random_name', only: :new
         get 'preview_host_collection'
 
-        get 'register', to: 'registration#new'
-        post 'register', to: 'registration#create'
+        get 'register' => 'react#index'
+        post 'register', to: 'registration_commands#create'
+        get 'register/data', to: 'registration_commands#form_data'
+        get 'register/os/:id', to: 'registration_commands#operatingsystem_template'
       end
 
       constraints(host_id: /[^\/]+/) do

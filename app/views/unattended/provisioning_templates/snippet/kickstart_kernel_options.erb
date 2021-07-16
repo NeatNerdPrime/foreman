@@ -29,10 +29,15 @@ snippet: true
 
   # tell Anaconda what to pass off to kickstart server
   # both current and legacy syntax provided
-  options.push("kssendmac", "ks.sendmac", "inst.ks.sendmac")
+  if (is_fedora && os_major >= 33) || (rhel_compatible && os_major >= 9)
+    options.push("inst.ks=#{foreman_url('provision')}", "inst.ks.sendmac")
+  else
+    options.push("ks=#{foreman_url('provision')}", "kssendmac", "ks.sendmac")  
+  end
 
   # networking credentials
   raise("Dual-stack provisioning not supported") if subnet4 && subnet6
+  options.push("dualstack!") if subnet4 && subnet6
   if subnet4 && subnet4.dhcp_boot_mode?
     options.push("ip=dhcp") if rhel_compatible && major >= 7
   elsif subnet4 && !subnet4.dhcp_boot_mode?
@@ -50,7 +55,7 @@ snippet: true
         options.push("ip=#{iface.ip}::#{subnet4.gateway}:#{subnet4.mask}:#{hostname}:#{iface.identifier}:none")
       end
     end
-  elsif subnet6.dhcp_boot_mode? && rhel_compatible && major >= 7
+  elsif subnet6 && subnet6.dhcp_boot_mode? && rhel_compatible && major >= 7
     if host_param_true?("use-slaac")
       options.push("ip=auto6")
     else
@@ -82,6 +87,14 @@ snippet: true
 
   # VLAN (only on physical is recognized)
   if iface.virtual? && iface.tag.present? && iface.attached_to.present?
+    if iface.attached_to.match 'bond'
+      @host.bond_interfaces.each do |bond_interface|
+          if bond_interface.identifier == iface.attached_to
+              bond_slaves = bond_interface.attached_devices_identifiers.join(',')
+              options.push("bond=#{bond_interface.identifier}:#{bond_slaves}:mode=#{bond_interface.mode},#{bond_interface.bond_options.tr(' ', ',')}")
+          end
+      end
+    end
     if (is_fedora && os_major < 17) || (rhel_compatible && os_major < 7)
       options.push("vlanid=#{iface.tag}")
     else
@@ -98,6 +111,14 @@ snippet: true
     options.push("inst.stage2=#{medium_uri}")
   end
 
+  # S390x architecture has a different stage two image:
+  # https://access.redhat.com/solutions/4206591
+  if @host.architecture.to_s.match(/s390x?/i)
+    options.push("inst.cmdline")
+    options.push("inst.repo=#{medium_uri}")
+  end
+
+  # FIPS
   if !is_fedora && os_major >= 7 && host_param_true?('fips_enabled')
     options.push('fips=1')
   end

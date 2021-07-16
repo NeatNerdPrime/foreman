@@ -107,6 +107,16 @@ class Api::V2::HostsControllerTest < ActionController::TestCase
     assert_equal Host.all.pluck(:id, :name), hosts['results'].map(&:values)
   end
 
+  test "should get thin index even the will paginate scope is not defined" do
+    # this test is based on bug: https://projects.theforeman.org/issues/32776
+    get :index, params: { thin: true, per_page: :all}
+    assert_response :success
+    assert_not_nil assigns(:hosts)
+    hosts = ActiveSupport::JSON.decode(@response.body)
+    assert !hosts.empty?
+    assert_equal Host.all.pluck(:id, :name), hosts['results'].map(&:values)
+  end
+
   test "subtotal should be the same as the search count with thin" do
     FactoryBot.create_list(:host, 2)
     Host.last.update_attribute(:name, 'test')
@@ -455,6 +465,12 @@ class Api::V2::HostsControllerTest < ActionController::TestCase
   test "should show specific status hosts" do
     get :get_status, params: { :id => @host.to_param, :type => 'global' }
     assert_response :success
+  end
+
+  test "should not get nonexistent status" do
+    get :get_status, params: { :id => @host.to_param, :type => 'doesnt_exist' }
+    assert_equal({'error' => 'Status doesnt_exist does not exist.'}, JSON.parse(@response.body))
+    assert_response :unprocessable_entity
   end
 
   test "should be able to create hosts even when restricted" do
@@ -1214,7 +1230,7 @@ class Api::V2::HostsControllerTest < ActionController::TestCase
     mac = RFauxFactory.gen_alpha
     put :update, params: { :id => @host.id, :host => {:mac => mac} }
     assert_response :unprocessable_entity, "Can update host with invalid mac #{mac}"
-    assert_match "'#{mac}' is not a valid MAC address", @response.body
+    assert_match "'#{mac.downcase}' is not a valid MAC address", @response.body
   end
 
   test "should update build parameter with false value" do

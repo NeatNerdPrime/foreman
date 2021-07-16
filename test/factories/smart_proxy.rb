@@ -19,6 +19,12 @@ FactoryBot.define do
       proxy.reload unless proxy.new_record?
     end
 
+    trait :ignore_validations do
+      callback(:after_stub, :after_build) do |proxy|
+        proxy.define_singleton_method(:valid?) { |*_args| true }
+      end
+    end
+
     factory :template_smart_proxy do
       after(:build) do |smart_proxy, _evaluator|
         smart_proxy.smart_proxy_features << FactoryBot.build(:smart_proxy_feature, :templates, :smart_proxy => smart_proxy)

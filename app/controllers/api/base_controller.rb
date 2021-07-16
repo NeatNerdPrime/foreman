@@ -6,6 +6,7 @@ module Api
     include Foreman::Controller::ApiCsrfProtection
     include Foreman::Controller::BruteforceProtection
 
+    before_action :load_settings
     before_action :set_default_response_format, :authorize, :set_taxonomy
     before_action :assign_lone_taxonomies, :only => :create
     before_action :add_info_headers, :set_gettext_locale
@@ -78,6 +79,7 @@ module Api
       if association.nil? && parent_name == 'host'
         association = resource_class.reflect_on_all_associations.detect { |assoc| assoc.class_name == 'Host::Base' }
       end
+      return resource_class.all if association.nil? && Taxonomy.types.include?(resource_class_for(resource_name(parent_name)))
       raise "Association not found for #{parent_name}" unless association
       result_scope = resource_class_join(association, scope).reorder(nil)
       # Check that the scope resolves before return

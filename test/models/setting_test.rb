@@ -9,7 +9,6 @@ class SettingTest < ActiveSupport::TestCase
   def test_should_validate_inclusions
     assert Setting::URI_BLANK_ATTRS.include? "login_delegation_logout_url"
     assert Setting::IP_ATTRS.include? "libvirt_default_console_address"
-    assert Setting::REGEXP_ATTRS.include? "remote_addr"
   end
 
   def test_should_not_find_a_value_if_doesnt_exists
@@ -78,52 +77,20 @@ class SettingTest < ActiveSupport::TestCase
     end
   end
 
-  def test_should_provide_default_if_no_value_defined
-    assert Setting.create(:name => "foo", :default => 5, :description => "test foo")
-    assert_equal 5, Setting["foo"]
+  test 'proxy the value get to the registry' do
+    SettingRegistry.instance.expects(:[]).with('foo')
+    Setting['foo']
   end
 
   def test_settings_with_the_same_value_as_default_should_not_save_the_value
     assert Setting.create(:name => "foo", :value => "bar", :default => "bar", :description => "x")
     s = Setting.find_by_name "foo"
     assert_nil s.read_attribute(:value)
-    assert_equal "bar", Setting[:foo]
   end
 
   def test_should_not_allow_to_change_frozen_attributes
     check_frozen_change :name, "new value"
     check_frozen_change :category, "Auth"
-  end
-
-  def test_name_could_be_a_symbol_or_a_string
-    assert Setting.create(:name => "foo", :default => 5, :description => "test foo")
-    assert_equal 5, Setting[:foo]
-    assert_equal 5, Setting["foo"]
-  end
-
-  def test_should_save_value_on_assignment
-    assert Setting.create(:name => "foo", :default => 5, :description => "test foo")
-
-    Setting[:foo] = 3
-    setting = Setting.find_by_name("foo")
-
-    assert_equal 3, Setting["foo"]
-    assert_equal 3, setting.value
-  end
-
-  def test_default_value_can_be_nil
-    assert Setting.create(:name => "foo", :default => nil, :description => "test foo")
-    assert_nil Setting["foo"]
-  end
-
-  def test_should_return_updated_value_only_after_it_is_saved
-    setting = Setting.create(:name => "foo", :value => 5, :default => 5, :description => "test foo")
-
-    setting.value = 3
-    assert_equal 5, Setting["foo"]
-
-    setting.save
-    assert_equal 3, setting.value
   end
 
   def test_second_time_create_persists_only_default_value
@@ -263,19 +230,6 @@ class SettingTest < ActiveSupport::TestCase
     check_correct_type_for "boolean", false
   end
 
-  # tests for caching
-  def test_returns_value_from_cache
-    check_value_returns_from_cache_with :name => "test_cache", :default => 1, :value => 2, :description => "test foo"
-  end
-
-  def test_boolean_false_returns_from_cache
-    check_value_returns_from_cache_with :name => "test_cache", :default => true, :value => false, :description => "test foo"
-  end
-
-  def test_boolean_true_returns_from_cache
-    check_value_returns_from_cache_with :name => "test_cache", :default => true, :value => true, :description => "test foo"
-  end
-
   # tests for default type constraints
   test "arrays cannot be empty by default" do
     check_setting_did_not_save_with :name => "foo", :value => [], :default => ["a", "b", "c"], :description => "test foo"
@@ -385,17 +339,6 @@ class SettingTest < ActiveSupport::TestCase
     assert_equal "is invalid", setting.errors[:value].first
   end
 
-  test "remote_addr must have a proper IP regexp format" do
-    attrs = { :name => "remote_addr", :default => "127.0.0.1", :description => "desc" }
-    assert Setting.create!(attrs)
-    setting = Setting.find_by_name("remote_addr")
-    setting.value = "192.168.100.122|127.0.0.1"
-    assert setting.save
-    setting.value = "\\"
-    refute setting.save
-    assert_equal "must be a valid regexp", setting.errors[:value].first
-  end
-
   test "integers in setting cannot be more then 8 characters" do
     check_length_must_be_under_8 'entries_per_page'
   end
@@ -462,11 +405,6 @@ class SettingTest < ActiveSupport::TestCase
     assert_equal s.category, "Setting::General"
     s = Setting.create!(:name => "foo", :category => "Setting::Auth")
     assert_equal s.category, "Setting::Auth"
-  end
-
-  test "create succeeds when cache is non-functional" do
-    Setting.cache.expects(:delete).with(Setting.cache_key('test_broken_cache')).returns(false)
-    assert_valid Setting.create!(:name => 'test_broken_cache', :description => 'foo', :default => 'default')
   end
 
   test '.expand_wildcard_string wraps the regexp with \A and \Z' do
@@ -566,25 +504,6 @@ class SettingTest < ActiveSupport::TestCase
   def check_setting_did_not_save_with(options = {})
     setting = Setting.new(options)
     assert !setting.save
-  end
-
-  def check_value_returns_from_cache_with(options = {})
-    name = options[:name]
-    cache_key = Setting.cache_key(name)
-
-    # cache must be cleared on create
-    Rails.cache.write(cache_key, "old value")
-    assert Setting.create(options)
-    assert_nil Rails.cache.read(cache_key)
-
-    # first time getter method, write the cache
-    Rails.cache.delete(cache_key)
-    assert_equal options[:value], Setting[name]
-    assert_equal options[:value], Rails.cache.read(cache_key)
-
-    # setter method deletes the cache
-    Setting[name] = options[:value]
-    assert_nil Rails.cache.read(cache_key)
   end
 
   test 'bmc_credentials_accessible may not be disabled with safemode_render disabled' do

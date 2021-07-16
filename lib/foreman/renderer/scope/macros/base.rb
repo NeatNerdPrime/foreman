@@ -334,20 +334,33 @@ module Foreman
             Gem::Version.new(first.to_s) <=> Gem::Version.new(second.to_s)
           end
 
-          apipie :method, "Returns content of 'SSL CA file' configured in Settings > Authentication" do
+          apipie :method, "Returns the TLS certificate(s) needed to verify a connection to Foreman" do
+            desc 'Currently it relies on "SSL CA file" authentication setting, which normally points to the file containing the
+                  CA certificate for Smart Proxies. However in the default deployment, this certificate happens to be the same.'
             example "SSL_CA_CERT=$(mktemp)
                      cat > $SSL_CA_CERT <<CA_CONTENT
                      <%= foreman_server_ca_cert %>
                      CA_CONTENT
-                     curl --cacert $SSL_CA_CERT https://smart-proxy.example.com:8443"
+                     curl --cacert $SSL_CA_CERT https://foreman.example.com"
           end
           def foreman_server_ca_cert
-            if File.exist?(Setting[:ssl_ca_file])
+            raise UndefinedSetting.new(setting: 'SSL CA file') if Setting[:ssl_ca_file].blank?
+            begin
               File.read(Setting[:ssl_ca_file])
-            else
-              msg = N_("SSL CA file not found, check the 'SSL CA file' in Settings > Authentication")
+            rescue => e
+              msg = N_("%s, check the 'SSL CA file' in Settings > Authentication") % e.message
               raise Foreman::Exception.new(msg)
             end
+          end
+
+          apipie_method :rand, 'Returns random floating point numbers between 0 and 1' do
+            desc 'When the attribute is smaller or equal to 1, the function return float. Otherwise it returns integer. '
+            optional :args, ::Float, desc: 'Can take a parameter as max value for random number. For negative and float numbers produce interesting outputs'
+            returns ::Float
+            example 'rand #=> 0.5
+                     rand #=> 0.8
+                     rand(100) #=> 23
+                     rand(100) #=> 72'
           end
 
           private

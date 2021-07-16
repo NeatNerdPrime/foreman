@@ -91,11 +91,6 @@ attributes21:
   category: Setting::Provisioning
   default: "false"
   description: "Should Foreman query the locally configured name server or the SOA/NS authorities"
-attributes22:
-  name: remote_addr
-  category: Setting::Provisioning
-  default: "127.0.0"
-  description: "If Foreman is running behind Passenger or a remote loadbalancer, the ip should be set here"
 attributes23:
   name: authorize_login_delegation
   category: Setting::General
@@ -428,3 +423,8 @@ attribute94:
   category: Setting::Provisioning
   default: 'Global Registration'
   description: "Default Global registration template"
+attribute95:
+  name: default_host_init_config_template
+  category: Setting::Provisioning
+  default: 'Linux host initial configuration'
+  description: "Default host initial configuration template"

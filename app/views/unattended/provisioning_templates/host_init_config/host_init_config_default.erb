@@ -1,0 +1,72 @@
+<%#
+kind: host_init_config
+name: Linux host_init_config default
+model: ProvisioningTemplate
+oses:
+- AlmaLinux
+- CentOS
+- Fedora
+- Rocky
+- Debian
+- Ubuntu
+-%>
+<% built_https = foreman_url('built').start_with?('https') -%>
+#!/bin/bash
+set -e
+
+echo "# Running [<%= @host.name %>] host initial configuration"
+
+<% if built_https -%>
+SSL_CA_CERT=$(mktemp)
+cat << EOF > $SSL_CA_CERT
+<%= foreman_server_ca_cert %>
+EOF
+<% end -%>
+
+foreman_curl() {
+  curl --silent --show-error <%= '--cacert $SSL_CA_CERT' if built_https %> -o /dev/null --noproxy \* "$@"
+}
+
+exit_and_cancel_build() {
+  echo 'Host [<%= @host.name %>] initial configuration failed'
+  foreman_curl --request POST '<%= foreman_url('failed') %>' \
+       --data 'Host initial configuration failed, please see the registration log for more details.'
+  exit 1
+}
+
+set +e
+trap 'exit_and_cancel_build' ERR
+
+<% if host_puppet_server.present? -%>
+<%= snippet 'puppetlabs_repo' %>
+<%= snippet 'puppet_setup' %>
+<% end -%>
+
+<% if host_param_true?('host_registration_remote_execution') -%>
+<%= snippet 'remote_execution_ssh_keys' %>
+
+<% end -%>
+
+<%= install_packages(host_param('host_packages')) -%>
+
+<% if host_param_true?('host_registration_insights') -%>
+<%= snippet 'insights' %>
+
+<% end -%>
+
+<%= update_packages if host_param_true?('host_update_packages') -%>
+
+<%= snippet_if_exists('host_init_config_post') -%>
+
+# Call home to exit build mode
+
+trap - ERR
+foreman_curl '<%= foreman_url('built') %>'
+
+if [[ $? == 0 ]] ; then
+  echo "Host [<%= @host.name %>] successfully configured."
+else
+  echo "Host [<%= @host.name %>] successfully configured, but failed to set built status."
+fi
+
+exit 0

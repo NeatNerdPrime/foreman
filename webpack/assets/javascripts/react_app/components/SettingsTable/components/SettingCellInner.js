@@ -1,36 +1,37 @@
 import React from 'react';
-import classNames from 'classnames';
 import PropTypes from 'prop-types';
+import { useDispatch } from 'react-redux';
 
-import { valueToString, hasDefault, inStrong } from '../SettingsTableHelpers';
+import { setSettingEditing } from '../../SettingRecords/SettingRecordsActions';
+import useSettingModal from '../../SettingUpdateModal/useSettingModal';
+
+import { valueToString, hasDefault } from '../SettingsTableHelpers';
 
 const SettingCellInner = props => {
-  const { setting, className, onEditClick, ...rest } = props;
+  const { setting, ...rest } = props;
 
-  const cssClasses = classNames(className, {
-    'editable-empty': !setting.value && setting.settingsType !== 'boolean',
-    'masked-input': setting.encrypted,
-  });
+  const { setModalOpen } = useSettingModal();
+  const dispatch = useDispatch();
 
-  const field = (
-    <span {...rest} className={cssClasses} onClick={() => onEditClick(setting)}>
+  const editable = !setting.readonly;
+  const openModal = () => {
+    dispatch(setSettingEditing(setting));
+    setModalOpen();
+  };
+
+  let field = (
+    <div onClick={editable ? openModal : undefined} {...rest}>
       {valueToString(setting)}
-    </span>
+    </div>
   );
 
-  return setting.value !== setting.default && hasDefault(setting)
-    ? inStrong(field)
-    : field;
+  if (setting.value !== setting.default && hasDefault(setting))
+    field = <strong>{field}</strong>;
+  return field;
 };
 
 SettingCellInner.propTypes = {
   setting: PropTypes.object.isRequired,
-  className: PropTypes.string,
-  onEditClick: PropTypes.func.isRequired,
-};
-
-SettingCellInner.defaultProps = {
-  className: '',
 };
 
 export default SettingCellInner;

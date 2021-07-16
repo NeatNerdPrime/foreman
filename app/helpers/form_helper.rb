@@ -232,27 +232,11 @@ module FormHelper
   end
 
   def byte_size_f(f, attr, options = {})
-    options[:class] = options[:class].to_s + ' byte_spinner' unless options[:disabled]
-    options[:label_help] = _("When specifying custom value, add 'MB' or 'GB' at the end. Field is not case sensitive and MB is default if unspecified.")
-    options[:help_block] ||= soft_limit_warning_block
-    options[:help_block] += f.hidden_field(attr, :class => "real-hidden-value", :id => nil)
-
-    text_f(f, attr, options)
+    react_form_input('memory', f, attr, options)
   end
 
   def counter_f(f, attr, options = {})
-    options[:class] = options[:class].to_s + ' counter_spinner' unless options[:disabled]
-    options[:help_block] ||= soft_limit_warning_block
-
-    text_f(f, attr, options)
-  end
-
-  def soft_limit_warning_block
-    content_tag(:span, :class => 'maximum-limit hidden') do
-      icon_text('warning-triangle-o',
-        content_tag(:span, ' ' + _('Specified value is higher than recommended maximum'), :class => 'error-message'),
-        :kind => 'pficon')
-    end
+    react_form_input('counter', f, attr, options)
   end
 
   def submit_or_cancel(f, overwrite = false, args = { })
@@ -353,7 +337,8 @@ module FormHelper
 
   def link_to_remove_fields(name, f, options = {})
     options[:title] ||= _("Remove Parameter")
-    f.hidden_field(:_destroy) + link_to_function(icon_text('remove', name, :kind => 'pficon'), "remove_fields(this)", options)
+    method_name = f.object.respond_to?(:_destroy) ? :_destroy : :_delete
+    f.hidden_field(method_name) + link_to_function(icon_text('remove', name, :kind => 'pficon'), "remove_fields(this)", options)
   end
 
   # Creates a link to a javascript function that creates field entries for the association on the web page
@@ -362,14 +347,14 @@ module FormHelper
   # +association : The field are created to allow entry into this association
   # +partial+    : String containing an optional partial into which we render
   def link_to_add_fields(name, f, association, partial = nil, options = {})
-    new_object = f.object.class.reflect_on_association(association).klass.new
+    new_object = options.delete(:object) || f.object.class.reflect_on_association(association).klass.new
     locals_option = options.delete(:locals) || {}
     fields = f.fields_for(association, new_object, :child_index => "new_#{association}") do |builder|
       render((partial.nil? ? association.to_s.singularize + "_fields" : partial),
         { :f => builder }.merge(locals_option))
     end
     options[:class] = link_to_add_fields_classes(options)
-    link_to_function(name, "add_fields('#{options[:target]}', '#{association}', '#{escape_javascript(fields)}')".html_safe, options)
+    link_to_function(name, "add_fields('#{options[:target]}', '#{association}', '#{escape_javascript(fields)}', '#{options[:direction] || 'append'}')".html_safe, options)
   end
 
   def field(f, attr, options = {})

@@ -12,8 +12,7 @@ import { maxLengthMsg, requiredMsg } from '../../common/forms/validators';
 import { translate as __ } from '../../../common/I18n';
 import { submitForm } from '../../../redux/actions/common/forms';
 import DateTime from '../../common/forms/DateTime/DateTime';
-
-const MODAL_ID = 'personal-access-tokens-form-modal';
+import { MODAL_ID } from './PersonalAccessTokensConstants';
 
 const tokenFormSchema = Yup.object().shape({
   name: Yup.string()
@@ -28,16 +27,17 @@ const PersonalAccessTokenForm = ({ controller, url, initialValues }) => {
     id: MODAL_ID,
   });
 
-  const handleSubmit = async (values, actions) => {
-    await dispatch(
+  const handleSubmit = (values, actions) => {
+    dispatch(
       submitForm({
         url,
         values: { ...values, controller },
         item: 'personal_access_token',
         message: __('Personal Access Token was successfully created.'),
+        actions,
+        successCallback: setModalClosed,
       })
     );
-    setModalClosed();
   };
 
   return (
@@ -49,7 +49,7 @@ const PersonalAccessTokenForm = ({ controller, url, initialValues }) => {
       <ForemanModal id={MODAL_ID} title={__('Create Personal Access Token')}>
         <ForemanModal.Header />
         <ForemanForm
-          onSubmit={(values, actions) => handleSubmit(values, actions)}
+          onSubmit={handleSubmit}
           initialValues={initialValues}
           validationSchema={tokenFormSchema}
           onCancel={setModalClosed}

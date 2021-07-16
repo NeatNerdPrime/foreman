@@ -1,6 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Grid, Row } from 'patternfly-react';
+import { number, text } from '@storybook/addon-knobs';
+import { action } from '@storybook/addon-actions';
 import { Formik } from 'formik';
 import RadioButtonGroup from './RadioButtonGroup';
 import FormField from './FormField';
@@ -16,6 +18,8 @@ import {
   selectProps,
   dateTimeWithErrorProps,
   ownComponentFieldProps,
+  counterProps,
+  memoryProps,
 } from './FormField.fixtures';
 
 const StoryForm = () => (
@@ -73,6 +77,24 @@ export const formField = () => (
       </Row>
       <Row>
         <FormField {...ownComponentFieldProps} />
+      </Row>
+      <Row>
+        <FormField
+          {...counterProps}
+          min={number('CounterMinValue', 1)}
+          max={number('CounterMaxValue', 16)}
+          recommendedMaxValue={number('CounterRecommendedMaxValue', 10)}
+          onChange={action('Counter value was changed')}
+        />
+      </Row>
+      <Row>
+        <FormField
+          {...memoryProps}
+          recommendedMaxValue={number('MemoryRecommendedMaxValue', 2048*1024*1024)}
+          maxValue={number('MemoryMaxValue', 48000*1024*1024)}
+          minValue={number('MemoryMinValue', 1024*1024)}
+          onChange={action('Memory value was changed')}
+        />
       </Row>
     </Grid>
   </Story>

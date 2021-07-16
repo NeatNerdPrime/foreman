@@ -51,6 +51,9 @@ module Menu
           menu.item :hosts,             :caption => N_('All Hosts')
           menu.item :newhost,           :caption => N_('Create Host'),
                     :url_hash => {:controller => '/hosts', :action => 'new'}
+          menu.item :register_hosts,    :caption => N_('Register Host'),
+                    :url => '/hosts/register',
+                    :url_hash => { :controller => 'hosts', :action => 'create' }
           if SETTINGS[:unattended]
             menu.divider                :caption => N_('Provisioning Setup')
             menu.item :architectures,   :caption => N_('Architectures')
@@ -95,6 +98,7 @@ module Menu
         menu.sub_menu :lab_features_menu, :caption => N_('Lab Features'), :icon => 'fa fa-flask' do
           menu.item :host_wizard,
             :caption => 'Host Wizard',
+            :url_hash => { :controller => 'api/v2/hosts', :action => 'create' },
             :url => '/host_wizard'
         end
       end

@@ -3,10 +3,16 @@ kind: cloud-init
 name: CloudInit default
 model: ProvisioningTemplate
 oses:
+- AlmaLinux
 - CentOS
 - Fedora
+- Rocky
 - Debian
 - Ubuntu
+test_on:
+- host4dhcp
+- debian4dhcp
+- ubuntu4dhcp
 -%>
 <%#
 This template accepts the following parameters:
@@ -17,9 +23,8 @@ This template accepts the following parameters:
 -%>
 <%
   rhel_compatible = @host.operatingsystem.family == 'Redhat' && @host.operatingsystem.name != 'Fedora'
-  pm_set = @host.puppetmaster.empty? ? false : true
   proxy_uri = host_param('http-proxy') ? "http://#{host_param('http-proxy')}:#{host_param('http-proxy-port')}" : nil
-  puppet_enabled = pm_set || host_param_true?('force-puppet')
+  puppet_enabled = host_puppet_server.present? || host_param_true?('force-puppet')
   chef_enabled = @host.respond_to?(:chef_proxy) && @host.chef_proxy
 -%>
 

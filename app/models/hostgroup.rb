@@ -16,6 +16,7 @@ class Hostgroup < ApplicationRecord
 
   validate :validate_subnet_types
   validates_with SubnetsConsistencyValidator
+  validate :validate_compute_profile, :if => proc { |hostgroup| hostgroup.compute_profile_id_changed? && hostgroup.compute_profile_id.present? }
 
   include ScopedSearchExtensions
   include SelectiveClone
@@ -110,7 +111,7 @@ class Hostgroup < ApplicationRecord
     property :operatingsystem, 'Operatingsystem', desc: 'Returns operating system to be used on hosts within this host group'
     property :os, 'Operatingsystem', desc: 'Returns operating system to be used on hosts within this host group'
     property :ptable, 'Ptable', desc: 'Returns partition table associated with this host group'
-    property :puppetmaster, String, desc: 'Returns host name of the server with Puppet Master'
+    property :puppet_server, String, desc: 'Returns host name of the server with Puppetserver'
     property :params, Hash, desc: 'Returns parameters of this host group'
     property :puppet_proxy, 'SmartProxy', desc: 'Returns Smart proxy with Puppet feature'
     property :puppet_ca_server, 'SmartProxy', desc: 'Returns Smart proxy Puppet CA feature'
@@ -124,11 +125,16 @@ class Hostgroup < ApplicationRecord
     property :title, String, desc: 'Returns full title of this host group, e.g. Base/CentOS 7'
   end
   class Jail < Safemode::Jail
-    allow :id, :name, :diskLayout, :puppetmaster, :operatingsystem, :architecture,
+    allow :id, :name, :diskLayout, :puppet_server, :operatingsystem, :architecture,
       :environment, :ptable, :url_for_boot, :params, :puppet_proxy,
       :puppet_ca_server, :os, :arch, :domain, :subnet, :hosts,
       :subnet6, :realm, :root_pass, :description, :pxe_loader, :title,
       :children, :parent
+
+    def puppetmaster
+      Foreman::Deprecation.deprecation_warning('3.0', 'Hostgroup#puppetmaster is deprecated, please use host_puppet_server macro instead')
+      @source.puppet_server
+    end
   end
 
   # TODO: add a method that returns the valid os for a hostgroup
@@ -317,5 +323,9 @@ class Hostgroup < ApplicationRecord
   def validate_subnet_types
     errors.add(:subnet, _("must be of type Subnet::Ipv4.")) if subnet.present? && subnet.type != 'Subnet::Ipv4'
     errors.add(:subnet6, _("must be of type Subnet::Ipv6.")) if subnet6.present? && subnet6.type != 'Subnet::Ipv6'
+  end
+
+  def validate_compute_profile
+    errors.add(:compute_profile, _('is not valid.')) unless ComputeProfile.authorized(:view_compute_profiles).visibles.where(id: compute_profile_id).any?
   end
 end

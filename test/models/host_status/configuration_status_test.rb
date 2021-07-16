@@ -99,8 +99,13 @@ class ConfigurationStatusTest < ActiveSupport::TestCase
       end
 
       def stub_outofsync_setting(value)
-        Setting.create(name: :testorigin_out_of_sync_disabled,
-                       description: 'description', default: false)
+        Foreman.settings._add('testorigin_out_of_sync_disabled',
+          context: :test,
+          type: :boolean,
+          category: 'Setting::General',
+          full_name: 'Test out of sync',
+          description: 'description',
+          default: false)
         Setting[:testorigin_out_of_sync_disabled] = value
       end
     end
@@ -157,5 +162,16 @@ class ConfigurationStatusTest < ActiveSupport::TestCase
     assert_equal [@host], Host.search_for('status.applied = 0')
     assert_equal [@host], Host.search_for('status.applied = false')
     assert_equal [], Host.search_for('status.applied = 1')
+  end
+
+  test 'overwrite outofsync_interval as host parameter' do
+    window = 30
+    Setting['puppet_interval'] = 10
+    Setting['outofsync_interval'] = 15
+    @status.reported_at = Time.now.utc - window.minutes
+    assert @status.out_of_sync?
+    # should be not out of sync if Setting['outofsync_interval'] is overwritten by parameter
+    @host.params['outofsync_interval'] = 25
+    refute @status.out_of_sync?
   end
 end

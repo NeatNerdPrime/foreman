@@ -17,7 +17,7 @@ export const dateTimeWithErrorProps = {
 
 export const selectProps = {
   type: 'select',
-  id: 'date-time',
+  id: 'select-field',
   label: 'Grouped select',
   name: 'group[groupedSelect]',
   options: [
@@ -46,4 +46,17 @@ export const formAutocompleteDataProps = {
   searchQuery: '',
   name: 'Filter[search]',
   id: 'form-search',
+};
+
+export const counterProps = {
+  type: 'counter',
+  label: 'Counter',
+  id: 'counter-field',
+};
+
+
+export const memoryProps = {
+  type: 'memory',
+  label: 'Memory',
+  id: 'memory-field',
 };

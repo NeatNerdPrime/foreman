@@ -1,4 +1,4 @@
-<% javascript 'charts', 'hosts' %>
+<% javascript 'hosts' %>
 <% title @host.to_label,
   text: @host.to_label,
   icon: {
@@ -65,7 +65,7 @@
           <%= spinner(_('Loading VM information ...')) %>
         </div>
       <% end %>
-      <div id="nics" class="tab-pane" data-ajax-url='<%= nics_host_path(@host)%>' data-on-complete='tfm.tools.activateTooltips'>
+      <div id="nics" class="tab-pane" data-ajax-url='<%= nics_host_path(@host)%>'>
         <%= spinner(_('Loading NICs information ...')) %>
       </div>
       <% if @host.bmc_available? %>
@@ -81,14 +81,14 @@
     <div class="stats-well">
       <h4 class="ca"><%= _("Runtime") %></h4>
       <h6 class="ca"><%= n_("last %s day", "last %s days", @range) % @range %></h6>
-      <div class="chart" data-ajax-url='<%= runtime_host_path(@host, :range => @range) %>' data-on-complete='updateChart'>
+      <div class="chart" data-ajax-url='<%= runtime_host_path(@host, :range => @range) %>'>
         <%= spinner(_('Loading runtime information ...')) %>
       </div>
     </div>
     <div class="stats-well">
       <h4 class="ca"><%= _("Resources") %></h4>
       <h6 class="ca"><%= n_("last %s day", "last %s days", @range) % @range %></h6>
-      <div class="chart" data-ajax-url='<%= resources_host_path(@host, :range => @range) %>' data-on-complete='updateChart'>
+      <div class="chart" data-ajax-url='<%= resources_host_path(@host, :range => @range) %>'>
         <%= spinner(_('Loading resources information ...')) %>
       </div>
     </div>

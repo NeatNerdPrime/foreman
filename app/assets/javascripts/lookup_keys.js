@@ -116,7 +116,6 @@ function add_child_node(item) {
   $('a[rel="popover"]').popover();
   $('a[rel="twipsy"]').tooltip();
   activate_select2($(field).not('.matcher_key'));
-  tfm.numFields.initAll(field);
   return new_id;
 }
 
@@ -185,7 +184,7 @@ function keyTypeChange(item) {
 
   changeCheckboxEnabledStatus(
     mergeOverrides,
-    keyType == 'array' || keyType == 'hash'
+    keyType == 'array' || keyType == 'hash' || keyType == 'json' || keyType == 'yaml'
   );
   var mergeOverrideChecked = $(mergeOverrides).attr('checked') == 'checked';
   changeCheckboxEnabledStatus(
@@ -324,6 +323,14 @@ function fill_in_matchers() {
         .attr('selected', 'selected');
       matcher_value.val(key_value[1]);
     }
+
+    $(matcher_value).data('initialValue', matcher_value.val());
+    $(matcher_key).data('initialValue', matcher_key.find(":selected").text());
+
+  });
+
+  $('.input-group textarea[data-property="value"]').each(function(idx, element) {
+    $(element).data('initialValue', $(element).val());
   });
 }
 

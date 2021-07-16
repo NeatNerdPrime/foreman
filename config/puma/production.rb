@@ -1,3 +1,9 @@
+run_dir = Rails.root.join('tmp')
+
+# Store server info state.
+state_path File.join(run_dir, 'puma.state')
+state_permission 0o0640
+
 # Configure "min" to be the minimum number of threads to use to answer
 # requests and "max" the maximum.
 #
@@ -43,4 +49,14 @@ end
 on_worker_boot do
   dynflow = ::Rails.application.dynflow
   dynflow.initialize! unless dynflow.config.lazy_initialization
+end
+
+# === Puma control rack application ===
+activate_control_app "unix://#{run_dir}/sockets/pumactl.sock"
+
+# Loading and initializing of all gettext languages takes about 100ms per language
+# in development environment and little less on production. Let's eager load languages
+# for production before forking to save memory on CoW operating systems.
+before_fork do
+  FastGettext.human_available_locales
 end

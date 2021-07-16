@@ -1,4 +1,3 @@
-<%= javascript_tag("$(document).on('ContentLoad', tfm.numFields.initAll)"); %>
 
 <%= text_f f, :name, :label => _('Name'), :label_size => "col-md-3" if show_vm_name? %>
 <% clusters = compute_resource.clusters %>
@@ -26,7 +25,6 @@
 <%= f.hidden_field :instance_type if !new_vm %>
 
 <%
-selected_cluster ||= params[:host] && params[:host][:compute_attributes] && params[:host][:compute_attributes][:cluster]
 if params[:host] && params[:host][:compute_attributes] && params[:host][:compute_attributes] && params[:host][:compute_attributes][:instance_type]
   instance_type = compute_resource.instance_type(params[:host][:compute_attributes][:instance_type])
 end
@@ -35,11 +33,15 @@ disable_sockets = !new_vm || (new_vm && instance_type && instance_type.sockets.p
 disable_mem = !new_vm || (new_vm && instance_type && instance_type.memory.present?)
 %>
 
-<%= counter_f f, :cores, :disabled => disable_cores, :label => _('Cores per socket'), :label_size => 'col-md-2' %>
-
-<%= counter_f f, :sockets, :disabled => disable_sockets, :label => _('Sockets'), :label_size => 'col-md-2' %>
-
-<%= byte_size_f f, :memory, :disabled => disable_mem, :label => _('Memory'), :label_size => "col-md-2" %>
+<div id="cores-input">
+  <%= counter_f(f, :cores, label: _('Cores per socket'), disabled: disable_cores) %>
+</div>
+<div id="sockets-input">
+  <%= counter_f(f, :sockets, label: _('Sockets'), disabled: disable_sockets) %>
+</div>
+<div id="memory-input">
+<%= byte_size_f(f, :memory, label: _('Memory'), disabled: disable_mem) %>
+</div>
 
 <% checked = params[:host] && params[:host][:compute_attributes] && params[:host][:compute_attributes][:start] || '1' %>
 <%= checkbox_f f, :ha, { :checked => (f.object.ha == '1') , :label => _('Highly Available'), :label_size => "col-md-2" }  %>
@@ -60,7 +62,7 @@ disable_mem = !new_vm || (new_vm && instance_type && instance_type.memory.presen
                   :disabled => f.object.status != "down" && !new_vm } %>
 <% end %>
 
-<% unless local_assigns[:hide_image] %>
+<% if host %>
   <%
      arch ||= nil ; os ||= nil
      images = possible_images(compute_resource, arch, os)

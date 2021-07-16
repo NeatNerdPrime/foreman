@@ -23,7 +23,8 @@ class Operatingsystem < ApplicationRecord
   accepts_nested_attributes_for :os_default_templates, :allow_destroy => true,
     :reject_if => :reject_empty_provisioning_template
 
-  validates :major, :numericality => {:greater_than_or_equal_to => 0}, :presence => { :message => N_("Operating System version is required") }
+  validates :major, numericality: true, presence: { message: N_("Operating System version is required") }
+  validates :minor, format: { with: /\A\d+(\.\d+)*\z/, message: "Operating System minor version must be in N or N.N format" }, allow_blank: true
   has_many :os_parameters, :dependent => :destroy, :foreign_key => :reference_id, :inverse_of => :operatingsystem
   has_many :parameters, :dependent => :destroy, :foreign_key => :reference_id, :class_name => "OsParameter"
   accepts_nested_attributes_for :os_parameters, :allow_destroy => true
@@ -32,7 +33,6 @@ class Operatingsystem < ApplicationRecord
   include ParameterSearch
 
   attr_name :to_label
-  validates :minor, :numericality => {:greater_than_or_equal_to => 0}, :allow_nil => true, :allow_blank => true
   validates :name, :presence => true, :no_whitespace => true,
             :uniqueness => { :scope => [:major, :minor], :message => N_("Operating system version already exists")}
   validates :description, :uniqueness => true, :allow_blank => true
@@ -42,6 +42,8 @@ class Operatingsystem < ApplicationRecord
   validates :title, :uniqueness => true, :presence => true
 
   before_validation :set_family
+
+  after_create :assign_init_config_template
 
   default_scope -> { order(:title) }
 
@@ -57,12 +59,14 @@ class Operatingsystem < ApplicationRecord
   scoped_search :relation => :provisioning_templates, :on => :name, :complete_value => :true, :rename => "template", :only_explicit => true
 
   FAMILIES = { 'Debian'    => %r{Debian|Ubuntu}i,
-               'Redhat'    => %r{RedHat|Centos|Fedora|Scientific|SLC|OracleLinux}i,
+               'Redhat'    => %r{RedHat|Centos|Fedora|Scientific|SLC|OracleLinux|AlmaLinux|Rocky|Amazon}i,
                'Suse'      => %r{OpenSuSE|SLES|SLED}i,
                'Windows'   => %r{Windows}i,
                'Altlinux'  => %r{Altlinux}i,
                'Archlinux' => %r{Archlinux}i,
                'Coreos'    => %r{CoreOS|Flatcar}i,
+               'Fcos'      => %r{FCOS|FedoraCoreOS|FedoraCOS}i,
+               'Rhcos'     => %r{RHCOS|RedHatCoreOS|RedHatCOS}i,
                'Rancheros' => %r{RancherOS}i,
                'Gentoo'    => %r{Gentoo}i,
                'Solaris'   => %r{Solaris}i,
@@ -224,7 +228,7 @@ class Operatingsystem < ApplicationRecord
     unless medium_provider.is_a? MediumProviders::Provider
       raise Foreman::Exception.new(N_('Please provide a medium provider. It can be found as @medium_provider in templates, or Foreman::Plugin.medium_providers_registry.find_provider(host)'))
     end
-    pxe_prefix(medium_provider) + "-" + family.constantize::PXEFILES[type.to_sym]
+    pxe_prefix(medium_provider) + "-" + pxe_file_names(medium_provider)[type.to_sym]
   end
 
   # Does this OS family support a build variant that is constructed from a prebuilt archive
@@ -265,6 +269,21 @@ class Operatingsystem < ApplicationRecord
     return false unless family
     return becomes(family.constantize).use_release_name? unless self.class == family.constantize
     false
+  end
+
+  # Helper text shown next to major version (do not use i18n)
+  def major_version_help
+    '7'
+  end
+
+  # Helper text shown next to minor version (do not use i18n)
+  def minor_version_help
+    'e.g. 0 or 6.1810 (CentOS scheme)'
+  end
+
+  # Helper text shown next to release name (do not use i18n)
+  def release_name_help
+    'karmic, lucid, hw0910...'
   end
 
   def image_extension
@@ -311,8 +330,13 @@ class Operatingsystem < ApplicationRecord
     boot_file_sources(medium_provider, &block)[file]
   end
 
+  def pxe_file_names(medium_provider)
+    family.constantize::PXEFILES
+  end
+
   def boot_file_sources(medium_provider, &block)
-    @boot_file_sources ||= family.constantize::PXEFILES.transform_values do |img|
+    @boot_file_sources ||= pxe_file_names(medium_provider).transform_values do |img|
+      img = medium_provider.interpolate_vars(img)
       "#{medium_provider.medium_uri(pxedir(medium_provider), &block)}/#{img}"
     end
   end
@@ -331,6 +355,10 @@ class Operatingsystem < ApplicationRecord
     medium_provider.medium_uri.to_s
   end
 
+  def has_default_template?(template_kind)
+    os_default_templates.find_by(template_kind: template_kind) || false
+  end
+
   private
 
   def set_family
@@ -342,7 +370,7 @@ class Operatingsystem < ApplicationRecord
   end
 
   def stringify_major_and_minor
-    # Cast major and minor to strings. see db/schema.rb around lines 560-562 (Or https://github.com/theforeman/foreman/blob/develop/db/migrate/20090720134126_create_operatingsystems.rb#L4).
+    # Cast major and minor to strings.
     # Need to ensure type when using major and minor as scopes for name uniqueness.
     self.major = major.to_s
     self.minor = minor.to_s
@@ -357,5 +385,15 @@ class Operatingsystem < ApplicationRecord
     provisioning_template_id_empty = attributes[:provisioning_template_id].blank?
     attributes[:_destroy] = 1 if template_exists && provisioning_template_id_empty
     (!template_exists && provisioning_template_id_empty)
+  end
+
+  def assign_init_config_template
+    template_name = Setting[:default_host_init_config_template]
+    template_kind = TemplateKind.unscoped.find_by(name: 'host_init_config')
+    template = ProvisioningTemplate.unscoped.find_by(name: template_name, template_kind: template_kind)
+    return unless template
+
+    template.operatingsystems << self
+    OsDefaultTemplate.create(template_kind: template_kind, provisioning_template: template, operatingsystem: self)
   end
 end

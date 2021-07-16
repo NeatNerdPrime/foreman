@@ -9,18 +9,22 @@ import {
   smallBarChartConfig,
   lineChartConfig,
   timeseriesLineChartConfig,
+  timeseriesAreaChartConfig,
 } from './ChartService.consts';
 
 const chartsSizeConfig = {
-  donut: {
-    regular: donutChartConfig,
-    medium: donutMediumChartConfig,
-    large: donutLargeChartConfig,
+  area: {
+    timeseries: timeseriesAreaChartConfig,
   },
   bar: {
     regular: barChartConfig,
     small: smallBarChartConfig,
     medium: mediumBarChartConfig,
+  },
+  donut: {
+    regular: donutChartConfig,
+    medium: donutMediumChartConfig,
+    large: donutLargeChartConfig,
   },
   line: {
     regular: lineChartConfig,
@@ -58,17 +62,16 @@ export const getChartConfig = ({
   const colors = getColors(data);
   const colorsSize = Object.keys(colors).length;
   const dataExists = doDataExist(data);
-  const longNames = [];
-  const shortNames = [];
+  const longNames = {};
 
   let dataWithShortNames = [];
 
   if (dataExists) {
     dataWithShortNames = data.map(val => {
       const item = Immutable.asMutable(val.slice());
-      longNames.push(item[0]);
+      const longName = item[0];
       item[0] = item[0].length > 30 ? `${val[0].substring(0, 10)}...` : item[0];
-      shortNames.push(item[0]);
+      longNames[item[0]] = longName;
       return item;
     });
   }
@@ -82,11 +85,11 @@ export const getChartConfig = ({
       ...(colorsSize > 0 ? { colors } : {}),
     },
     // eslint-disable-next-line no-shadow
-    tooltip: { format: { name: (d, value, ratio, id) => longNames[id] } },
+    tooltip: { format: { name: (name, ratio, id, idx) => longNames[id] } },
 
     onrendered: () => {
-      shortNames.forEach((name, i) => {
-        const nameOfClass = name.replace(/\W/g, '-');
+      dataWithShortNames.forEach(colData => {
+        const nameOfClass = colData[0].replace(/\W/g, '-');
         const selector = `.c3-legend-item-${nameOfClass} > title`;
         // eslint-disable-next-line no-undef
         const hasTooltip = d3.select(selector)[0][0];
@@ -95,9 +98,31 @@ export const getChartConfig = ({
           // eslint-disable-next-line no-undef
           d3.select(`.c3-legend-item-${nameOfClass}`)
             .append('svg:title')
-            .text(longNames[i]);
+            .text(longNames[colData[0]]);
         }
       });
     },
   };
+};
+
+export const navigateToSearch = (url, searchFilters, data) => {
+  let val = searchFilters[data.id] || data.id;
+  let setUrl;
+
+  window.tfm.tools.showSpinner();
+
+  if (url.includes('~VAL1~') || url.includes('~VAL2~')) {
+    const vals = val.split(' ');
+
+    const val1 = encodeURIComponent(vals[0]);
+    const val2 = encodeURIComponent(vals[1]);
+
+    setUrl = url.replace('~VAL1~', val1).replace('~VAL2~', val2);
+  } else {
+    if (val.includes(' ')) {
+      val = encodeURIComponent(val);
+    }
+    setUrl = url.replace('~VAL~', val);
+  }
+  window.location.href = setUrl;
 };

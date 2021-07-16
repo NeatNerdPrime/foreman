@@ -19,6 +19,7 @@ module Hostext
       scoped_search :on => :managed,       :complete_value => {:true => true, :false => false}
       scoped_search :on => :owner_type,    :complete_value => true, :only_explicit => true
       scoped_search :on => :owner_id,      :complete_enabled => false, :only_explicit => true, :validator => ScopedSearch::Validators::INTEGER
+      scoped_search :on => :id,            :complete_enabled => false, :only_explicit => true, :validator => ScopedSearch::Validators::INTEGER
 
       scoped_search :relation => :last_report_object, :on => :origin, :only_explicit => true
 
@@ -70,6 +71,12 @@ module Hostext
       scoped_search :relation => :search_parameters, :on => :searchable_value, :in_key => :search_parameters, :on_key => :name, :complete_value => true, :rename => :params, :ext_method => :search_by_params, :only_explicit => true, :operators => ['= ', '~ ']
 
       scoped_search :relation => :reported_data, :on => :boot_time, :rename => 'boot_time', :only_explicit => true
+      scoped_search :relation => :reported_data, :on => :boot_time, :rename => 'reported.boot_time', :only_explicit => true
+      scoped_search :relation => :reported_data, :on => :virtual, :rename => 'reported.virtual', :complete_value => {:true => true, :false => false}
+      scoped_search :relation => :reported_data, :on => :ram, :rename => 'reported.ram', :only_explicit => true
+      scoped_search :relation => :reported_data, :on => :sockets, :rename => 'reported.sockets', :only_explicit => true
+      scoped_search :relation => :reported_data, :on => :cores, :rename => 'reported.cores', :only_explicit => true
+      scoped_search :relation => :reported_data, :on => :disks_total, :rename => 'reported.disks_total', :only_explicit => true
 
       scoped_search :relation => :location, :on => :title, :rename => :location, :complete_value => true, :only_explicit => true
       scoped_search :on => :location_id, :complete_enabled => false, :only_explicit => true, :validator => ScopedSearch::Validators::INTEGER

@@ -67,10 +67,32 @@ module PuppetRelatedHelper
     classes.where(:id => class_vars)
   end
 
+  def extraction_warning_puppet_classes_management
+    _("Puppet Classes management is being extracted to the foreman_puppet plugin and will be removed from core in 3.0")
+  end
+
+  def extraction_warning_config_groups
+    _("Config Groups are being extracted to the foreman_puppet plugin and will be removed from core in 3.0")
+  end
+
+  def extraction_warning_puppet_environments
+    _("Puppet Environments management is being extracted to the foreman_puppet plugin and will be removed from core in 3.0")
+  end
+
+  def extraction_warning_smart_class_parameters
+    _("Smart Class Parameters management is being extracted to the foreman_puppet plugin and will be removed from core in 3.0")
+  end
+
+  def extraction_warning_puppet_enc
+    _("Puppet ENC is being extracted to the foreman_puppet plugin and will be removed from core in 3.0")
+  end
+
   def puppetclasses_tab(puppetclasses_receiver)
     content_tag(:div, :class => "tab-pane", :id => "puppet_klasses") do
       if @environment.present? ||
           @hostgroup.present? && @hostgroup.environment.present?
+        alert(:class => "alert-info", :header => _("Notice"),
+              :text => extraction_warning_puppet_classes_management)
         render "puppetclasses/class_selection", :obj => puppetclasses_receiver
       else
         alert(:class => "alert-info", :header => _("Notice"),

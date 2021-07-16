@@ -18,7 +18,6 @@ module Foreman::Controller::Registration
     location = Location.authorized(:view_locations).find(params['location_id']) if params['location_id'].present?
     host_group = Hostgroup.authorized(:view_hostgroups).find(params['hostgroup_id']) if params["hostgroup_id"].present?
     operatingsystem = Operatingsystem.authorized(:view_operatingsystems).find(params['operatingsystem_id']) if params["operatingsystem_id"].present?
-    host_config_params = host_config_params(organization, location, host_group, operatingsystem)
 
     context = {
       user: User.current,
@@ -29,8 +28,12 @@ module Foreman::Controller::Registration
       operatingsystem: operatingsystem,
       url_host: registration_url.host,
       registration_url: registration_url,
-      setup_insights: global_setup_insights(host_config_params),
-      setup_remote_execution: global_setup_remote_execution(host_config_params),
+      setup_insights: ActiveRecord::Type::Boolean.new.deserialize(params['setup_insights']),
+      setup_remote_execution: ActiveRecord::Type::Boolean.new.deserialize(params['setup_remote_execution']),
+      packages: params['packages'],
+      update_packages: params['update_packages'],
+      repo: params['repo'],
+      repo_gpg_key_url: params['repo_gpg_key_url'],
     }
 
     params.permit(permitted)
@@ -93,42 +96,25 @@ module Foreman::Controller::Registration
     fail Foreman::Exception.new(msg)
   end
 
-  def host_config_params(organization, location, host_group, operatingsystem)
-    Host.new(organization: organization, location: location, hostgroup: host_group, operatingsystem: operatingsystem).params
+  def setup_host_params
+    setup_host_param('host_registration_insights', params['setup_insights'])
+    setup_host_param('host_registration_remote_execution', params['setup_remote_execution'])
+    setup_host_param('host_packages', params['packages'], 'string')
+    setup_host_param('host_update_packages', params['update_packages'])
   end
 
-  def global_setup_insights(host_params)
-    return if params['setup_insights'].to_s.blank?
+  def setup_host_param(name, value, key_type = 'boolean')
+    return if value.to_s.blank?
 
-    from_host = host_params['host_registration_insights']
-    from_request = ActiveRecord::Type::Boolean.new.deserialize(params['setup_insights'])
+    hp = HostParameter.find_or_initialize_by(host: @host, name: name, key_type: key_type)
 
-    from_request if (from_request != from_host)
-  end
+    hp.value = if key_type == 'boolean'
+                 ActiveRecord::Type::Boolean.new.deserialize(value)
+               else
+                 value
+               end
 
-  def global_setup_remote_execution(host_params)
-    return if params['setup_remote_execution'].to_s.blank?
-
-    from_host = host_params['host_registration_remote_execution']
-    from_request = ActiveRecord::Type::Boolean.new.deserialize(params['setup_remote_execution'])
-
-    from_request if (from_request != from_host)
-  end
-
-  def host_setup_insights
-    return if params['setup_insights'].to_s.blank?
-
-    insights_param = HostParameter.find_or_initialize_by(host: @host, name: 'host_registration_insights', key_type: 'boolean')
-    insights_param.value = ActiveRecord::Type::Boolean.new.deserialize(params['setup_insights'])
-    insights_param.save!
-  end
-
-  def host_setup_remote_execution
-    return if params['setup_remote_execution'].to_s.blank?
-
-    rex_param = HostParameter.find_or_initialize_by(host: @host, name: 'host_registration_remote_execution', key_type: 'boolean')
-    rex_param.value = ActiveRecord::Type::Boolean.new.deserialize(params['setup_remote_execution'])
-    rex_param.save!
+    hp.save!
   end
 
   def api_authorization_token

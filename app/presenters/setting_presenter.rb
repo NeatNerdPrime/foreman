@@ -6,6 +6,7 @@ class SettingPresenter
 
   attribute :id, :integer
   attribute :category, :string, default: 'Setting::General'
+  attribute :context
   attribute :name, :string
   attribute :default
   attribute :value
@@ -13,27 +14,10 @@ class SettingPresenter
   attribute :full_name, :string
   attribute :encrypted, :boolean, :default => false
   attribute :settings_type, :string
-  attribute :select_values
-  attribute :config_file
-  attribute :updated_at, :datetime
-  attribute :created_at, :datetime
-  attr_accessor :options
+  attribute :config_file, :string
+  attribute :updated_at
 
-  def self.from_setting(setting)
-    SettingPresenter.new({id: setting.id,
-                          name: setting.name,
-                          category: setting.category,
-                          description: setting.description,
-                          settings_type: setting.settings_type,
-                          default: setting.default,
-                          full_name: setting.full_name,
-                          updated_at: setting.updated_at,
-                          created_at: setting.created_at,
-                          config_file: setting.class.config_file,
-                          select_values: setting.select_collection,
-                          value: setting.value,
-                          encrypted: setting.encrypted? })
-  end
+  attr_accessor :collection
 
   def self.model_name
     Setting.model_name
@@ -71,13 +55,25 @@ class SettingPresenter
     attribute(:settings_type) || Setting.setting_type_from_value(default)
   end
 
+  def matches_search_query?(query)
+    if (res = query.match(/name\s*=\s*(\S+)/))
+      name == res[1]
+    else
+      description.include?(query) || name.include?(query) || full_name&.include?(query)
+    end
+  end
+
   # ----- UI helpers ------
 
   def category_label
-    category.constantize.humanized_category || _(category_name)
+    Foreman::SettingManager.categories[category] || category.safe_constantize&.humanized_category || category_name
   end
 
   def category_name
     category.gsub(/Setting::/, '')
+  end
+
+  def select_values
+    Setting.select_collection_registry.collection_for name
   end
 end

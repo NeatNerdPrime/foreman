@@ -9,10 +9,12 @@ import SettingCellInner from './SettingCellInner';
 
 import './SettingCell.scss';
 
-const SettingCell = ({ setting, onEditClick }) => {
-  const fieldProps = { setting, tooltipId: setting.name, onEditClick };
-  const displayName = setting.fullName || setting.name;
-  const defaultStr = defaultToString(setting);
+const SettingCell = ({ setting, className }) => {
+  const fieldProps = {
+    setting,
+    tooltipId: setting.name,
+    className,
+  };
 
   if (setting.readonly) {
     fieldProps.tooltipText = sprintf(
@@ -22,8 +24,8 @@ const SettingCell = ({ setting, onEditClick }) => {
       setting.configFile
     );
   } else {
-    fieldProps.tooltipText = `${displayName} (Default: ${defaultStr})`;
-    fieldProps.className = 'editable';
+    const defaultStr = defaultToString(setting);
+    fieldProps.tooltipText = sprintf(__('Default: %s'), defaultStr);
   }
 
   const Component = withTooltip(SettingCellInner);
@@ -32,11 +34,11 @@ const SettingCell = ({ setting, onEditClick }) => {
 
 SettingCell.propTypes = {
   setting: PropTypes.object.isRequired,
-  onEditClick: PropTypes.func,
+  className: PropTypes.string,
 };
 
 SettingCell.defaultProps = {
-  onEditClick: () => {},
+  className: '',
 };
 
 export default SettingCell;

@@ -1330,6 +1330,19 @@ class RandomStatus < HostStatus::Status
 end
 ----
 
+The status class _must_ implement the followig methods:
+
+ * `to_label`: this method will be called to determine the string that will be used while displaying the status value.
+ * `self.status_name`: this method will be called to determine what label to display for the status.
+
+It _can_ also implement the following methods according to the specific needs:
+
+ * `to_global`: This method will be used to determine global status according to this specific one. The mechanism here is "voting" - to_global is called for each status and the highest value from https://github.com/theforeman/foreman/blob/ceb276fbe96b97770f5d292b1eadca0205a34a0a/app/models/host_status/global.rb#L3[the list] would be taken. The default is `HostStatus::Global::OK`.
+
+ * `to_status`: This method is used to determine the status based on external values in the system. By default it will return the previous value the status had. This default is useful if the status could not be determined by examining the current state, for example if the status is changing by some external event.
+
+For more information about possible customizations see the https://github.com/theforeman/foreman/blob/ceb276fbe96b97770f5d292b1eadca0205a34a0a/app/models/host_status/status.rb#L2[`status.rb`] base class.
+
 There are times when you may want to create a status that should not affect the
 host's global status. One use case is when there exists a status which derives
 its own status from one or more sub-statuses. Implementing a sub-status is as
@@ -1616,64 +1629,54 @@ end
 
 Plugins can store Foreman-wide settings either in the database or a
 config file. The DB should be preferred as it can be managed from the UI
-(under Administer > Settings), CLI, API and Puppet, and changed on the
+(under Administer > Settings), CLI and API. It also can be changed on the
 fly, while the config file is usually only used for settings that change
 behaviour during app startup and require a restart.
 
-To add new DB settings, the plugin should define a Setting class named
-after the plugin. For foreman_example, this would be at
-`app/models/setting/example.rb` and should look like:
+To add DB settings, the plugin should define them in it's registration block:
 
 [source, ruby]
 ....
-class Setting::Example < ::Setting
-  def self.load_defaults
-    return unless ActiveRecord::Base.connection.table_exists?('settings')
-    return unless super
+Foreman::Plugin.register :my_plugin do
+  # ....
 
-    Setting.transaction do
-      [
-        self.set('example_string', N_('Example setting that controls something'), 'default value'),
-        self.set('example_int', N_('Answer to the life, universe, and everything'), 42),
-      ].compact.each { |s| self.create s.update(:category => "Setting::Example") }
+  settings do
+    # Following settings will be added to a General category
+    category :general do
+      setting 'example_setting',
+        type: :string,
+        default: 'default value',
+        full_name: N_('Example of general setting'),
+        description: N_('Example setting that controls something')
     end
 
-    true
+    # Following settings will be added to category name 'cool' with label Cool
+    category :cool, N_('Cool') do
+      setting 'example_int',
+        type: :integer,
+        default: 42,
+        full_name: N_('The answer'),
+        description: N_('Answer to the life, universe, and everything')
+    end
+
+    # Following settings will be added to existing category named 'cfgmgmt'
+    category :cfgmgmt do
+      setting 'configure_everything',
+        type: :boolean
+        default: true,
+        full_name: N_('Configure everything'),
+        description: N_('Should configuration management tools configure everything for user, so user can go to the beach?')
+    end
   end
-
-  def self.humanized_category
-    N_('My Example')
-  end
 end
 ....
 
-Settings are listed in the transaction block and are initialised at app
-startup, with three arguments. The name is first - it should be unique
-and be prefixed with the plugin name. The second is a human readable
-description which will be translated. The third is the default value of
-the setting, which can be a string, integer, boolean or nil.
-
-If supporting Foreman 1.11+ only, add the following initialiser to
-engine.rb to load it:
-
-[source, ruby]
-....
-initializer 'foreman_example.load_default_settings', :before => :load_config_initializers do |app|
-  require_dependency File.expand_path("../../../app/models/setting/example.rb", __FILE__)
-end
-....
-
-To support 1.10 and lower _as well_ then use:
-
-[source, ruby]
-....
-initializer 'foreman_example.load_default_settings', :before => :load_config_initializers do |app|
-  require_dependency File.expand_path("../../../app/models/setting/example.rb", __FILE__) if (Setting.table_exists? rescue(false))
-end
-....
-
-To access the value of a setting, use `Setting[:example_string]` from
+To access the value of a setting, use `Setting[:example_setting]` from
 anywhere in your plugin.
+
+The settings are strongly typed and you have to define it.
+The basic types supported by Foreman are: `:boolean`, `:integer`, `:float`, `:string`, `:text`, `:hash`, `:array`.
+The `:text` type supports markdown and usage of such setting should expect markdown syntax when using it.
 
 [[config-files]]
 ==== Config files
@@ -2136,7 +2139,7 @@ Example events emitted by creating, updating or deleting of selected records (su
 * `subnet_updated.event.foreman`
 * `subnet_destroyed.event.foreman`
 
-Payload for records is the record model object itself under key `object` and `context` with additional logging context. Keep in mind that the model classes are not subject of stable API, they will change in the future. It's recommended not to publish full object but to strip down exposed information to bare minimum (e.g. host name and ID). 
+Payload for records is the record model object itself under key `object` and `context` with additional logging context. Keep in mind that the model classes are not subject of stable API, they will change in the future. It's recommended not to publish full object but to strip down exposed information to bare minimum (e.g. host name and ID).
 
 Example events emitted by performing background jobs (subclasses of `ApplicationJob`):
 
@@ -2162,7 +2165,13 @@ Payload for background jobs is the serialized active job hash (see `ActiveJob#se
 }
 ```
 
-You can find all observable events by calling `Foreman::EventSubscribers.all_observable_events` in the Rails console. 
+Example events emitted by Remote Execution plugin:
+
+* actions.remote_execution.run_host_job_succeeded
+
+Foreman Webhooks plugin ships with an example "Remote Execution Host Job" template.
+
+You can find all observable events by calling `Foreman::EventSubscribers.all_observable_events` in the Rails console.
 
 [[translating]]
 == Translating

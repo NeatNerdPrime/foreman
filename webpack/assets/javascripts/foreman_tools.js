@@ -3,9 +3,10 @@
 /* eslint-disable jquery/no-text */
 /* eslint-disable jquery/no-ajax */
 /* eslint-disable jquery/no-each */
+/* eslint-disable jquery/no-class */
 
 import $ from 'jquery';
-import { translate as __ } from './react_app/common/I18n';
+import { sprintf, translate as __ } from './react_app/common/I18n';
 
 import { showLoading, hideLoading } from './foreman_navigation';
 
@@ -29,12 +30,37 @@ export function iconText(name, innerText, iconClass) {
 }
 
 export function activateDatatables() {
+  const language = {
+    searchPlaceholder: __('Filter...'),
+    emptyTable: __('No data available in table'),
+    info: sprintf(
+      __('Showing %s to %s of %s entries'),
+      '_START_',
+      '_END_',
+      '_TOTAL_'
+    ),
+    infoEmpty: __('Showing 0 to 0 of 0 entries'),
+    infoFiltered: sprintf(__('(filtered from %s total entries)'), '_MAX_'),
+    lengthMenu: sprintf(__('Show %s entries'), '_MENU_'),
+    loadingRecords: __('Loading...'),
+    processing: __('Processing...'),
+    search: __('Search:'),
+    zeroRecords: __('No matching records found'),
+    paginate: {
+      first: __('First'),
+      last: __('Last'),
+      next: __('Next'),
+      previous: __('Previous'),
+    },
+    aria: {
+      sortAscending: __(': activate to sort column ascending'),
+      sortDescending: __(': activate to sort column descending'),
+    },
+  };
   $('[data-table=inline]')
     .not('.dataTable')
     .DataTable({
-      language: {
-        searchPlaceholder: __('Filter...'),
-      },
+      language,
       dom: "<'row'<'col-md-6'f>r>t<'row'<'col-md-6'i><'col-md-6'p>>",
     });
 
@@ -44,9 +70,7 @@ export function activateDatatables() {
       const url = el.getAttribute('data-source');
 
       $(el).DataTable({
-        language: {
-          searchPlaceholder: __('Filter...'),
-        },
+        language,
         processing: true,
         serverSide: true,
         ordering: false,
@@ -58,16 +82,19 @@ export function activateDatatables() {
 
 export function activateTooltips(elParam = 'body') {
   const el = $(elParam);
-  el.find('[rel="twipsy"]').tooltip({ container: 'body' });
+
+  el.tooltip({
+    selector: '[rel="twipsy"],*[title]:not(*[rel],.fa,.pficon)',
+    container: 'body',
+    trigger: 'hover',
+  });
+  // Ellipsis have to be initialized for each element for title() to work
   el.find('.ellipsis').tooltip({
     container: 'body',
     title() {
       return this.scrollWidth > this.clientWidth ? this.textContent : null;
     },
   });
-  el.find('*[title]')
-    .not('*[rel],.fa,.pficon')
-    .tooltip({ container: 'body' });
 }
 
 export function initTypeAheadSelect(input) {
@@ -116,3 +143,20 @@ export const setTab = () => {
     $(`.nav-tabs a[href="${urlHash}"]`).tab('show');
   }
 };
+
+export function highlightTabErrors() {
+  const errorFields = $('.tab-content .has-error');
+  errorFields.parents('.tab-pane').each(function fn() {
+    $(`a[href="#${this.id}"]`).addClass('tab-error');
+  });
+  $('.tab-error')
+    .first()
+    .click();
+  $('.nav-pills .tab-error')
+    .first()
+    .click();
+  errorFields
+    .first()
+    .find('.form-control')
+    .focus();
+}

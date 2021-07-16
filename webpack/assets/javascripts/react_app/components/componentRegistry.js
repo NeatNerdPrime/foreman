@@ -2,8 +2,9 @@ import React from 'react';
 import forceSingleton from '../common/forceSingleton';
 
 import ReactApp from '../Root/ReactApp';
-import DonutChart from './common/charts/DonutChart';
+import AreaChart from './common/charts/AreaChart';
 import BarChart from './common/charts/BarChart';
+import DonutChart from './common/charts/DonutChart';
 import LineChart from './common/charts/LineChart';
 import PowerStatus from './hosts/powerStatus/';
 import NotificationContainer from './notifications/';
@@ -41,6 +42,12 @@ import SettingRecords from './SettingRecords';
 import SettingsTable from './SettingsTable';
 import SettingUpdateModal from './SettingUpdateModal';
 import PersonalAccessTokens from './users/PersonalAccessTokens';
+import ClipboardCopy from './common/ClipboardCopy';
+import LabelIcon from './common/LabelIcon';
+import { WelcomeEnv } from './Enviroments/Welcome';
+import { WelcomeAuthSource } from './AuthSource/Welcome';
+import { WelcomeConfigReports } from './ConfigReports/Welcome';
+import { WelcomeArchitecture } from './Architectures/Welcome';
 
 const componentRegistry = {
   registry: forceSingleton('component_registry', () => ({})),
@@ -113,6 +120,7 @@ const coreComponets = [
   { name: 'ReactApp', type: ReactApp },
   { name: 'SearchBar', type: SearchBar },
   { name: 'AutoComplete', type: AutoComplete },
+  { name: 'AreaChart', type: AreaChart },
   { name: 'DonutChart', type: DonutChart },
   { name: 'LineChart', type: LineChart },
   { name: 'PowerStatus', type: PowerStatus },
@@ -139,7 +147,8 @@ const coreComponets = [
   { name: 'SettingsTable', type: SettingsTable },
   { name: 'SettingUpdateModal', type: SettingUpdateModal },
   { name: 'PersonalAccessTokens', type: PersonalAccessTokens },
-
+  { name: 'ClipboardCopy', type: ClipboardCopy },
+  { name: 'LabelIcon', type: LabelIcon },
   {
     name: 'RelativeDateTime',
     type: RelativeDateTime,
@@ -172,6 +181,10 @@ const coreComponets = [
   // Report templates
   { name: 'TemplateGenerator', type: TemplateGenerator },
   { name: 'LoginPage', type: LoginPage },
+  { name: 'WelcomeEnv', type: WelcomeEnv },
+  { name: 'WelcomeAuthSource', type: WelcomeAuthSource },
+  { name: 'WelcomeConfigReports', type: WelcomeConfigReports },
+  { name: 'WelcomeArchitecture', type: WelcomeArchitecture },
 ];
 
 componentRegistry.registerMultiple(coreComponets);

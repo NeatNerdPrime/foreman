@@ -27,6 +27,7 @@ module Foreman
         :preview?,
         :raise,
         :input,
+        :rand,
         :rand_hex,
         :rand_name,
         :mac_name,
@@ -43,6 +44,7 @@ module Foreman
         :number_with_precision,
         :number_to_human_size,
         :gem_version_compare,
+        :sequence_hostgroup_param_next,
         :parse_yaml,
         :parse_json,
         :to_json,
@@ -59,8 +61,13 @@ module Foreman
         :match,
         :host_param_true?, :host_param_false?,
         :host_param, :host_param!,
+        :host_puppet_server,
+        :host_puppet_ca_server,
+        :host_puppet_environment,
         :host_puppet_classes,
-        :host_enc
+        :host_enc,
+        :install_packages,
+        :update_packages
       ]
 
       DEFAULT_ALLOWED_VARIABLES = [
@@ -93,7 +100,6 @@ module Foreman
         :safemode_render,
         :manage_puppetca,
         :ignored_interface_identifiers,
-        :remote_addr,
         :token_duration,
         :dns_timeout,
         :name_generator_type,

@@ -1,4 +1,4 @@
-<%= javascript 'hosts', 'host_edit', 'host_edit_interfaces', 'charts' %>
+<%= javascript 'hosts', 'host_edit', 'host_edit_interfaces' %>
 <%= render "hosts/dhcp_lease_errors" if has_dhcp_lease_errors?(@host.errors) %>
 <%= render "hosts/conflicts" if (!has_dhcp_lease_errors?(@host.errors) && has_conflicts?(@host.errors)) %>
 <%= render "hosts/progress" %>
@@ -108,6 +108,11 @@
           <h2><%= _('Puppet Class Parameters') %></h2>
           <%= render "puppetclasses/classes_parameters", :obj => @host %>
         </fieldset>
+
+        <br/>
+
+        <%= slot('HostParams', true, lookup_values: lookup_values_data(@host)) %>
+
         <br/>
         <% if authorized_for(:controller => "host_editing", :action => "view_params") %>
           <fieldset>

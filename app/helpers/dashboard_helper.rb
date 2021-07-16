@@ -54,14 +54,36 @@ module DashboardHelper
   end
 
   def get_overview(report, options = {})
-    { data: [
-      [_('Active'), report[:active_hosts_ok_enabled], report_color[:active_hosts_ok_enabled]],
-      [_('Error'), report[:bad_hosts_enabled], report_color[:bad_hosts_enabled]],
-      [_('OK'), report[:ok_hosts_enabled], report_color[:ok_hosts_enabled]],
-      [_('Pending changes'), report[:pending_hosts_enabled], report_color[:pending_hosts_enabled]],
-      [_('Out of sync'), report[:out_of_sync_hosts_enabled], report_color[:out_of_sync_hosts_enabled]],
-      [_('No report'), report[:reports_missing], report_color[:reports_missing]],
-    ]}
+    options[:origin] = nil if options[:origin] == 'All'
+
+    state_labels = {
+      active_hosts_ok_enabled: _('Active'),
+      bad_hosts_enabled: _('Error'),
+      ok_hosts_enabled: _('OK'),
+      pending_hosts_enabled: _('Pending changes'),
+      out_of_sync_hosts_enabled: _('Out of sync'),
+      reports_missing: _('No report'),
+      disabled_hosts: _('Disabled alerts'),
+    }
+    state_filters = {
+      active_hosts_ok_enabled: '(status.applied > 0 or status.restarted > 0) and (status.failed = 0)',
+      bad_hosts_enabled: '(status.failed > 0 or status.failed_restarts > 0) and status.enabled = true',
+      ok_hosts_enabled: 'status.enabled = true and status.applied = 0 and status.failed = 0 and status.pending = 0',
+      pending_hosts_enabled: 'status.pending > 0 and status.enabled = true',
+      out_of_sync_hosts_enabled: 'status.enabled = true',
+      reports_missing: 'not has last_report and status.enabled = true',
+      disabled_hosts: 'status.enabled = false',
+    }
+    ignore_interval = [:reports_missing, :disabled_hosts]
+    within_interval = ignore_interval + [:out_of_sync_hosts_enabled]
+
+    {
+      data: state_labels.map { |key, label| [label, report[key], report_color[key]] },
+      searchUrl: hosts_path(search: '~VAL~'),
+      searchFilters: state_filters.each_with_object({}) do |(key, filter), filters|
+        filters[state_labels[key]] = search_filter_with_origin(filter, options[:origin], within_interval.include?(key), ignore_interval.include?(key))
+      end,
+    }
   end
 
   def get_run_distribution_data(hosts, options = {})

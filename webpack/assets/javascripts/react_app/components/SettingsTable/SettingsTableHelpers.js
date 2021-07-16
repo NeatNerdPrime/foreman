@@ -16,6 +16,7 @@ export const withTooltip = Component => componentProps => {
       placement="top"
       rootClose={false}
     >
+      {/* The span is needed because OverlayTrigger overrides child events */}
       <span>
         <Component {...rest} />
       </span>
@@ -171,5 +172,3 @@ export const hasDefault = setting => {
     }
   }
 };
-
-export const inStrong = markup => <strong>{markup}</strong>;

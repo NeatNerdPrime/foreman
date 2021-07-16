@@ -7,12 +7,27 @@ class Api::V2::UsergroupsControllerTest < ActionController::TestCase
 
   valid_attrs = { :name => 'test_usergroup' }
 
-  test "should get index" do
-    get :index
-    assert_response :success
-    assert_not_nil assigns(:usergroups)
-    usergroups = ActiveSupport::JSON.decode(@response.body)
-    assert !usergroups.empty?
+  context 'index test' do
+    def setup
+      @org = FactoryBot.create(:organization)
+      @loc = FactoryBot.create(:location)
+    end
+
+    test "should get index" do
+      get :index
+      assert_response :success
+      assert_not_nil assigns(:usergroups)
+      usergroups = ActiveSupport::JSON.decode(@response.body)
+      assert !usergroups.empty?
+    end
+
+    test "should get index with organization and location params" do
+      get :index, params: { :location_id => @loc.id, :organization_id => @org.id}
+      assert_response :success
+      assert_not_nil assigns(:usergroups)
+      usergroups = ActiveSupport::JSON.decode(@response.body)
+      assert !usergroups.empty?
+    end
   end
 
   test "should show individual record" do
@@ -139,5 +154,45 @@ class Api::V2::UsergroupsControllerTest < ActionController::TestCase
     assert_response :unprocessable_entity, "Can update usergroup with already taken name"
     @usergroup.reload
     assert_not_equal usergroup.name, @usergroup.name
+  end
+
+  test 'non-admin user with manager role should not be able to modify the user group when touching the admin flag' do
+    usergroup = FactoryBot.create(:usergroup, :admin => false)
+    setup_user 'edit', 'usergroups'
+
+    put :update, params: { :id => usergroup.id, :usergroup => { :admin => true } }, session: set_session_user
+    assert_response :unprocessable_entity
+  end
+
+  test 'non-admin user with manager role should be able to modify the user group without touching the admin flag' do
+    usergroup = FactoryBot.create(:usergroup, :admin => false)
+    setup_user 'edit', 'usergroups'
+
+    put :update, params: { :id => usergroup.id, :usergroup => { :name => usergroup.name + 'x'} }, session: set_session_user
+    assert_response :success
+  end
+
+  test 'non-admin user with manager role should not be able to create the user group with the admin flag' do
+    setup_user 'create', 'usergroups'
+    usergroup = FactoryBot.build(:usergroup)
+
+    post :create, params: { :usergroup => { :name => usergroup.name, :admin => true } }, session: set_session_user
+    assert_response :unprocessable_entity
+  end
+
+  test 'non-admin user with manager role should be able to create the user group even with the false admin flag' do
+    setup_user 'create', 'usergroups'
+    usergroup = FactoryBot.build(:usergroup)
+
+    post :create, params: { :usergroup => { :name => usergroup.name, :admin => false } }, session: set_session_user
+    assert_response :success
+  end
+
+  test 'non-admin user with manager role should be able to create the user group if admin flag is not set' do
+    setup_user 'create', 'usergroups'
+    usergroup = FactoryBot.build(:usergroup)
+
+    post :create, params: { :usergroup => { :name => usergroup.name } }, session: set_session_user
+    assert_response :success
   end
 end

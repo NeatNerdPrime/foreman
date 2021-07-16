@@ -3,14 +3,15 @@ kind: user_data
 name: Kickstart default user data
 model: ProvisioningTemplate
 oses:
+- AlmaLinux
 - CentOS
 - Fedora
+- Rocky
 -%>
 <%
   rhel_compatible = @host.operatingsystem.family == 'Redhat' && @host.operatingsystem.name != 'Fedora'
   # safemode renderer does not support unary negation
-  pm_set = @host.puppetmaster.empty? ? false : true
-  puppet_enabled = pm_set || host_param_true?('force-puppet')
+  puppet_enabled = host_puppet_server.present? || host_param_true?('force-puppet')
   salt_enabled = host_param('salt_master') ? true : false
   chef_enabled = @host.respond_to?(:chef_proxy) && @host.chef_proxy
 -%>
@@ -19,7 +20,7 @@ oses:
 <%# Cloud instances frequently have incorrect hosts data %>
 <%= snippet 'fix_hosts' %>
 
-<% if @host.provision_method == 'image' && !root_pass.empty? -%>
+<% if @host.provision_method == 'image' && root_pass.present? -%>
 # Install the root password
 echo 'root:<%= root_pass -%>' | /usr/sbin/chpasswd -e
 <% end -%>

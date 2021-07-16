@@ -3,9 +3,17 @@ kind: PXEGrub
 name: Kickstart default PXEGrub
 model: ProvisioningTemplate
 oses:
+- AlmaLinux
 - CentOS
 - Fedora
 - RedHat
+- Rocky
+test_on:
+- host4dhcp
+- host6dhcp
+- host4and6dhcp
+- host4static
+- host6static
 -%>
 # This file was deployed via '<%= template_name %>' template
 
@@ -14,7 +22,7 @@ timeout=<%= host_param('loader_timeout') || 10 %>
 
 title <%= template_name %>
   root (nd)
-  kernel (nd)/../<%= @kernel %> ks=<%= foreman_url('provision') %> <%= pxe_kernel_options %> <%= snippet("kickstart_kernel_options").strip %>
+  kernel (nd)/../<%= @kernel %> <%= pxe_kernel_options %> <%= snippet("kickstart_kernel_options").strip %>
   initrd (nd)/../<%= @initrd %>
 
 <%= snippet_if_exists(template_name + " custom menu") %>

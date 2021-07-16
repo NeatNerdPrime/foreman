@@ -15,6 +15,7 @@ import NewPersonalAccessToken from './NewPersonalAccessToken';
 import PersonalAccessTokenForm from './PersonalAccessTokenForm';
 import PersonalAccessTokensList from './PersonalAccessTokensList';
 import { translate as __ } from '../../../common/I18n';
+import { foremanUrl } from '../../../common/helpers';
 
 const PersonalAccessTokens = ({ url, canCreate }) => {
   const dispatch = useDispatch();
@@ -30,9 +31,11 @@ const PersonalAccessTokens = ({ url, canCreate }) => {
   const boundClearNewPersonalAccessToken = () =>
     dispatch(clearNewPersonalAccessToken());
 
-  const boundRevokePersonalAccessToken = id =>
-    dispatch(revokePersonalAccessTokenAction({ url, id }));
-
+  const boundRevokePersonalAccessToken = id => {
+    if (window.confirm(__('Do you really want to revoke Access Token?'))) {
+      dispatch(revokePersonalAccessTokenAction({ url, id }));
+    }
+  };
   return (
     <Fragment>
       <NewPersonalAccessToken
@@ -66,9 +69,9 @@ const PersonalAccessTokens = ({ url, canCreate }) => {
                   'Personal Access Tokens allow you to authenticate API requests without using your password, e.g. '
                 )}
                 <p>
-                  <code>
-                    curl -u admin:token http://localhost:5000/api/v2/hosts
-                  </code>
+                  <code>{`curl -u admin:token ${foremanUrl(
+                    '/api/v2/hosts'
+                  )}`}</code>
                 </p>
                 {canCreate && <PersonalAccessTokenForm url={url} />}
               </td>

@@ -25,9 +25,23 @@ class Redhat < Operatingsystem
     "kickstart"
   end
 
+  def pxe_file_names(medium_provider)
+    if medium_provider&.architecture_name&.match?(/^[Ss]390/)
+      {
+        kernel: "kernel.img",
+        initrd: "initrd.img",
+      }
+    else
+      super
+    end
+  end
+
   def pxedir(medium_provider = nil)
-    if medium_provider.try(:architecture).try(:name) =~ /^ppc64/
+    case medium_provider.try(:architecture_name)
+    when /^ppc64/i
       "ppc/ppc64"
+    when /^s390/i
+      "images"
     else
       "images/pxeboot"
     end
@@ -52,5 +66,10 @@ class Redhat < Operatingsystem
     options = super
     options << "modprobe.blacklist=#{params['blacklist'].delete(' ')}" if params['blacklist']
     options
+  end
+
+  # Helper text shown next to minor version (do not use i18n)
+  def minor_version_help
+    '0, 6.1810'
   end
 end

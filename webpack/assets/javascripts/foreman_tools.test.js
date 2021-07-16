@@ -42,22 +42,28 @@ describe('activateDatatables', () => {
       ajax: $('[data-table=server]').data('source'),
       language: {
         searchPlaceholder: 'Filter...',
+        emptyTable: 'No data available in table',
+        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+        infoEmpty: 'Showing 0 to 0 of 0 entries',
+        infoFiltered: '(filtered from _MAX_ total entries)',
+        lengthMenu: 'Show _MENU_ entries',
+        loadingRecords: 'Loading...',
+        processing: 'Processing...',
+        search: 'Search:',
+        zeroRecords: 'No matching records found',
+        paginate: {
+          first: 'First',
+          last: 'Last',
+          next: 'Next',
+          previous: 'Previous',
+        },
+        aria: {
+          sortAscending: ': activate to sort column ascending',
+          sortDescending: ': activate to sort column descending',
+        },
       },
       dom: "<'row'<'col-md-6'f>r>t<'row'<'col-md-6'><'col-md-6'p>>",
     });
-  });
-});
-
-describe('activateTooltips', () => {
-  it('calls $.fn.tooltip on all matching elements', () => {
-    const elements = `<div rel='twipsy'></div>
-      <div class='ellipsis'></div>
-      <div title='test'></div>
-      <div title='test' rel='popover'></div>`;
-
-    $.fn.tooltip = jest.fn();
-    tools.activateTooltips(elements);
-    expect($.fn.tooltip).toHaveBeenCalledTimes(3);
   });
 });
 
@@ -97,4 +103,3 @@ describe('initTypeAheadSelect', () => {
     expect($('.select2-chosen').text()).toEqual('testoption');
   });
 });
-
